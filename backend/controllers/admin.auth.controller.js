@@ -22,11 +22,11 @@ const login = async (req, res) => {
     }
     // Check if the password is correct
     bcrypt.compare(password,user.password,(err,result)=>{
-        if(err){
+        if(err || !result){
             return errorResponse(res,"Invalid password",401,{err})
         }
         const jwt_payload = {
-            "sub": newUser.id,
+            "sub": user.id,
             "username": user.org_name,
             "role": "admin",
             "iat": Math.floor(Date.now() / 1000), 
@@ -38,7 +38,12 @@ const login = async (req, res) => {
         const jwt_refresh_token = jwt.sign(jwt_payload, refresh_token_key, {
             expiresIn: "7d",
           });
-          return successResponse(res,{jwt_token,jwt_refresh_token},"Login succesful",200)
+          res.cookie("refreshToken", jwt_refresh_token, {
+            httpOnly: true,
+            secure: true, 
+            sameSite: "Strict",
+          });
+          return successResponse(res,{jwt_token},"Login succesful",200)
     })
 
   } catch (error) {}
@@ -75,7 +80,12 @@ const signup = async (req, res) => {
               const jwt_refresh_token = jwt.sign(jwt_payload, refresh_token_key, {
                   expiresIn: "7d",
               });
-              return successResponse(res, { jwt_token, jwt_refresh_token }, "User register succesfully",201);
+              res.cookie("refreshToken", jwt_refresh_token, {
+                httpOnly: true,
+                secure: true, 
+                sameSite: "Strict",
+              });
+              return successResponse(res, { jwt_token }, "User register succesfully",201);
             } catch (jwtError) {
               await newUser.destroy();
               return errorResponse(res, "Unable to create JWT token", 500, {jwtError});

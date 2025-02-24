@@ -1,9 +1,6 @@
 const {DngTable} = require("../models");
 const { successResponse, errorResponse } = require("../utils/responseGenerator");
 const jwt = require('jsonwebtoken')
-require("dotenv").config()
-const access_token_key = process.env.ACCESS_TOKEN_SECRET_KEY;
-const refresh_token_key = process.env.REFRESH_TOKEN_SECRET_KEY;
 
 const getAllDngTable = async (req, res) => {
     try {
@@ -24,7 +21,7 @@ const getAllDngTable = async (req, res) => {
         currentPage: parseInt(page),
       }, "Tables successfully fetched");
     } catch (error) {
-      return errorResponse(res, "Something went wrong", 500, error);
+      return errorResponse(res, "Something went wrong", 500, error.message);
     }
   };
 
@@ -39,9 +36,25 @@ const addDngTable =  async(req,res) => {
         const newDngTable = await DngTable.create({name,admin_id})
         successResponse(res,newDngTable,"table created",201)
     } catch (error) {
-        errorResponse(res,"something went wrong",500,error)
+        errorResponse(res,"something went wrong",500,error.message)
     }
   }
 
+const deleteTable = async (req, res) => {
+  try {
+    const {id} = req.params
+    if(!id){
+      return errorResponse(res, "Id require to delete", 400)
+    }
+    const table = await DngTable.findByPk(id)
+    if(!table){
+      return errorResponse(res, "No such table", 400)
+    }
+    table.destroy()
+    return successResponse(res, table, "Dinning table deleted", 200)
+  } catch (error) {
+    errorResponse(res, "something went wrong", 500, error.message)
+  }
+}
 
-  module.exports = { getAllDngTable, addDngTable}
+  module.exports = { getAllDngTable, addDngTable, deleteTable}

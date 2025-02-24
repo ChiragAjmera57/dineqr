@@ -18,6 +18,9 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
+      description: {
+        type: Sequelize.STRING,
+      },
       category: {
         type: Sequelize.STRING,
         allowNull: false,

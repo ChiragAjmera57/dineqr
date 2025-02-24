@@ -1,4 +1,4 @@
-const { getAllDngTable, addDngTable } = require('../controllers/dngTable.controller')
+const { getAllDngTable, addDngTable, deleteTable } = require('../controllers/dngTable.controller')
 
 const router = require('express').Router()
 
@@ -12,4 +12,7 @@ router.post('/',(req,res)=>{
     addDngTable(req,res)
 })
 
+router.delete('/:id',(req,res)=>{
+    deleteTable(req,res)
+})
 module.exports = router

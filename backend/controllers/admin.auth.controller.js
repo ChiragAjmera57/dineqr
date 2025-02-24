@@ -46,7 +46,9 @@ const login = async (req, res) => {
           return successResponse(res,{jwt_token},"Login succesful",200)
     })
 
-  } catch (error) {}
+  } catch (error) {
+    return errorResponse(res,"Something went wrong",500,error.message)
+  }
 };
 
 const signup = async (req, res) => {
@@ -95,7 +97,7 @@ const signup = async (req, res) => {
       }
     });
   } catch (error) {
-    return errorResponse(res,"Something went wrong",500,{error})
+    return errorResponse(res,"Something went wrong",500,error.message)
   }
 };
 module.exports = {

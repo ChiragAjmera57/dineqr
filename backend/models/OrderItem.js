@@ -12,10 +12,18 @@ module.exports = (sequelize, DataTypes) => {
       order_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+          modal:'Orders',
+          key: 'id'
+        }
       },
       menu_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+          modal:'Menus',
+          key: 'id'
+        }
       },
       quantity: {
         type: DataTypes.INTEGER,

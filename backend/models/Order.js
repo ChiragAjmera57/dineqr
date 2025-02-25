@@ -20,7 +20,15 @@ module.exports = (sequelize, DataTypes) => {
       table_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+          modal:'DngTables',
+          key: 'id'
+        }
       },
+      session_id: {
+        type: DataTypes.UUID(),
+        allowNull:false
+      }
       
 });
   Order.associate = (models) => {

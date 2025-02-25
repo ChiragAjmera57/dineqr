@@ -16,6 +16,10 @@ module.exports = (sequelize) => {
       admin_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+          modal:'Admins',
+          key: 'id'
+        }
       },
       
     });

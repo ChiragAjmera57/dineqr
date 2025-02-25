@@ -1,4 +1,5 @@
 const { body, validationResult } = require('express-validator');
+const { errorResponse } = require('../utils/responseGenerator');
 
 // Validation rules
 const validateRequest = [
@@ -6,13 +7,13 @@ const validateRequest = [
     body('data.*.menuId').isInt().withMessage('menuId must be an integer'),
     body('data.*.quantity').isInt({ min: 1 }).withMessage('quantity must be a positive integer'),
 
-    body('tableId').isString().withMessage('tableid must be a string').notEmpty().withMessage('tableId is required')
+    body('tableId').isNumeric().withMessage('tableid must be a number').notEmpty().withMessage('tableId is required')
 ];
 
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        return errorResponse(res, "invalid payload", 400,errors.array() )
     }
     next();
 };

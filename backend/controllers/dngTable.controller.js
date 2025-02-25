@@ -21,7 +21,7 @@ const getAllDngTable = async (req, res) => {
         currentPage: parseInt(page),
       }, "Tables successfully fetched");
     } catch (error) {
-      return errorResponse(res, "Something went wrong", 500, error.message);
+      return errorResponse(res, "Something went wrong", 500, { message:error.message, stack:error.stack });
     }
   };
 
@@ -36,7 +36,7 @@ const addDngTable =  async(req,res) => {
         const newDngTable = await DngTable.create({name,admin_id})
         successResponse(res,newDngTable,"table created",201)
     } catch (error) {
-        errorResponse(res,"something went wrong",500,error.message)
+        errorResponse(res,"something went wrong",500,{ message:error.message, stack:error.stack })
     }
   }
 
@@ -53,7 +53,7 @@ const deleteTable = async (req, res) => {
     table.destroy()
     return successResponse(res, table, "Dinning table deleted", 200)
   } catch (error) {
-    errorResponse(res, "something went wrong", 500, error.message)
+    errorResponse(res, "something went wrong", 500, { message:error.message, stack:error.stack })
   }
 }
 

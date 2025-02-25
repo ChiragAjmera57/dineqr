@@ -19,7 +19,7 @@ const getAllMenu = async (req, res) => {
         currentPage: parseInt(page),
       }, "menus successfully fetched");
     } catch (error) {
-      return errorResponse(res, "Something went wrong", 500, error.message);
+      return errorResponse(res, "Something went wrong", 500, { message:error.message, stack:error.stack });
     }
   };
 
@@ -34,7 +34,7 @@ const addMenu =  async(req,res) => {
         const newMenu = await Menu.create({name, admin_id, description, price, category})
         successResponse(res,newMenu,"menu created",201)
     } catch (error) {
-        errorResponse(res,"something went wrong",500,error.message)
+        errorResponse(res,"something went wrong",500,{ message:error.message, stack:error.stack })
     }
   }
 
@@ -62,7 +62,7 @@ const updateMenu = async (req, res) => {
   
       return successResponse(res, menu, "Menu updated successfully", 200);
     } catch (error) {
-      return errorResponse(res, "Something went wrong", 500, error.message);
+      return errorResponse(res, "Something went wrong", 500, { message:error.message, stack:error.stack });
     }
   };
 
@@ -81,7 +81,7 @@ const deleteMenu = async (req, res) => {
         successResponse(res, menu, "Menu deleted successfully", 200)
 
     } catch (error) {
-        return errorResponse(res, "Something went wrong", 500, error.message);
+        return errorResponse(res, "Something went wrong", 500, { message:error.message, stack:error.stack });
     }
   }
 

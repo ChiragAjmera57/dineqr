@@ -47,7 +47,7 @@ const login = async (req, res) => {
     })
 
   } catch (error) {
-    return errorResponse(res,"Something went wrong",500,error.message)
+    return errorResponse(res,"Something went wrong",500,{ message:error.message, stack:error.stack })
   }
 };
 

@@ -27,6 +27,10 @@ module.exports = (sequelize, DataTypes) => {
       admin_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+          modal:'Admins',
+          key: 'id'
+        }
     }
 });
   Menu.associate = (models) => {

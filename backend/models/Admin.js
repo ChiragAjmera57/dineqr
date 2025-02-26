@@ -1,6 +1,3 @@
-const sequelize = require('../config/database');
-const { DataTypes } = require('sequelize');
-
 module.exports = (sequelize, DataTypes) => {
     const Admin = sequelize.define('Admin', {
       org_name: {
@@ -20,6 +17,16 @@ module.exports = (sequelize, DataTypes) => {
         },
       },
     });
-  
+    Admin.associate = (models) => {
+      Admin.hasMany(models.DngTable, {
+        foreignKey: 'admin_id',
+        as: 'dngTables',
+      });
+      Admin.hasMany(models.Menu, {
+        foreignKey: 'admin_id',
+        as: 'menus',
+      });
+      
+    }
     return Admin;
   };

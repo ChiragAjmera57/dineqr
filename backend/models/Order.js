@@ -1,6 +1,3 @@
-const sequelize = require('../config/database');
-const { DataTypes } = require('sequelize');
-
 module.exports = (sequelize, DataTypes) => {
     const Order = sequelize.define('Order', {
       id: {
@@ -10,8 +7,10 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       status: {
-        type: DataTypes.STRING,
+        type: DataTypes.ENUM,
+        values: ['pending', 'confirmed', 'preparing', 'ready', 'served', 'completed', 'cancelled'],
         allowNull: false,
+        defaultValue: 'pending',
       },
       amount: {
         type: DataTypes.INTEGER,
@@ -35,6 +34,10 @@ module.exports = (sequelize, DataTypes) => {
     Order.belongsTo(models.DngTable, {
       foreignKey: 'table_id',
       as: 'table',
+    });
+    Order.hasMany(models.OrderItem, {
+      foreignKey: 'order_id',
+      as: 'orderItems',
     });
   }
   return Order;

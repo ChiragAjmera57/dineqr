@@ -1,6 +1,3 @@
-const sequelize = require('../config/database');
-const { DataTypes } = require('sequelize');
-
 module.exports = (sequelize, DataTypes) => {
     const Menu = sequelize.define('Menu', {
       id: {
@@ -37,6 +34,10 @@ module.exports = (sequelize, DataTypes) => {
     Menu.belongsTo(models.Admin, {
       foreignKey: 'admin_id',
       as: 'admin',
+    });
+    Menu.hasMany(models.OrderItem, {
+      foreignKey: 'menu_id',
+      as: 'orderItems',
     });
   }
   return Menu;

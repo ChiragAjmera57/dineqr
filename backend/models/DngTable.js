@@ -1,4 +1,3 @@
-const sequelize = require('../config/database');
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
@@ -24,10 +23,15 @@ module.exports = (sequelize) => {
       
     });
     DngTable.associate = (models) => {
+
       DngTable.belongsTo(models.Admin, {
         foreignKey: 'admin_id',
         as: 'admin',
       });
+      DngTable.hasMany(models.Session, {
+        foreignKey:'table_id',
+        as:'table'
+      })
     }
     return DngTable;
 

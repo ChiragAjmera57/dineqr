@@ -4,10 +4,16 @@ const { errorResponse, successResponse } = require("../utils/responseGenerator")
 
 const getAllOrder = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, status, sortBy = 'createdAt', sortOrder = 'DESC' } = req.query;
     const offset = (page - 1) * limit;
 
+    const whereClause = {};
+    if (status) {
+      whereClause.status = status;
+    }
+
     const orders = await Order.findAndCountAll({
+      where: whereClause,
       include: [
         {
           model: OrderItem,
@@ -20,10 +26,11 @@ const getAllOrder = async (req, res) => {
           ],
         },
       ],
-      order: [["createdAt", "DESC"]],
+      order: [[sortBy, sortOrder.toUpperCase()]],
       limit: parseInt(limit),
       offset: parseInt(offset),
     });
+
     const totalPages = Math.ceil(orders.count / limit);
     return successResponse(
       res,
@@ -37,7 +44,7 @@ const getAllOrder = async (req, res) => {
       200
     );
   } catch (error) {
-    return errorResponse(res, errorData = {message:error.message,stack:error.stack})
+    return errorResponse(res, { message: error.message, stack: error.stack });
   }
 };
 
@@ -65,4 +72,38 @@ const updateOrder = async(req,res) => {
         return errorResponse(res,errorData = {message:error.message,stack:error.stack})
     }
 }
-module.exports = { getAllOrder, updateOrder}
+
+const getOrderDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findOne({
+      where: { id },
+      include: [
+        {
+          model: OrderItem,
+          as: "orderItems",
+          include: [
+            {
+              model: Menu,
+              as: "menu",
+            },
+          ],
+        },
+        {
+          model: DngTable,
+          as: "table",
+        },
+      ],
+    });
+
+    if (!order) {
+      return errorResponse(res, "Order not found", 404);
+    }
+
+    return successResponse(res, order, "Order details fetched successfully", 200);
+  } catch (error) {
+    return errorResponse(res, { message: error.message, stack: error.stack });
+  }
+};
+
+module.exports = { getAllOrder, updateOrder, getOrderDetails}

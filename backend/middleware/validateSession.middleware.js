@@ -131,14 +131,14 @@ const joinExistingTable = async (req, res) => {
     });
     if (!sessionToThisTable) {
       await createSession(req, res);
-      return res.redirect('/ctmr/menu');
+      return res.redirect(`/menu/?tableId=${tableId}`);
     } else {
       res.cookie("session_id", sessionToThisTable.session_id, {
         httpOnly: true,
         secure: true,
         maxAge: 30 * 60 * 1000,
       });
-      return res.redirect('/menu'); // Redirect to the menu page
+      return res.redirect(`/menu/?tableId=${tableId}`); // Redirect to the menu page
     }
   } catch (error) {
     return errorResponse(res, "Something went wrong", 500, {
@@ -159,7 +159,7 @@ const joinNewTable = async (req, res) => {
       req.body.tableId = newTable.id;
       await createSession(req, res);
   
-      return res.redirect('/ctmr/menu'); // Redirect to the menu page
+      return res.redirect(`/menu/?tableId=${newTable.id}`); // Redirect to the menu page
     } catch (error) {
       return errorResponse(res, "Something went wrong", 500, {
         message: error.message,

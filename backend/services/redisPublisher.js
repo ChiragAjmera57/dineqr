@@ -22,4 +22,4 @@ async function removeOrderId(orderId) {
     }
 }
 
-module.exports = { setOrderExpiration, removeOrderId };
+module.exports = { setOrderExpiration, removeOrderId, redis };

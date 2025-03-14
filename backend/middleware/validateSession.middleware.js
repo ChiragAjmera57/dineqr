@@ -60,7 +60,7 @@ const createSession = async (req, res, next) => {
       secure: true,
       maxAge: 15 * 60 * 1000,
     });
-
+    req.session_id = newSessionId
     console.log(`Created new session ID: ${newSessionId} for table ${tableId}`);
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min expiry
     const rdmCustomerId = uuidv4()
@@ -116,8 +116,15 @@ const validateAndCreateSession = async (req, res, next) => {
       console.log("Session is valid and matches the table ID. Sending menu");
       next();
     } else if (fingerprintId) {
+      console.log("fingerprint found getting session from it....")
       const sessionFound = await getSessionFromFingerprint(fingerprintId);
       if (sessionFound) {
+        res.cookie("session_id", sessionFound, {
+          httpOnly: true,
+          secure: true,
+          maxAge: 15 * 60 * 1000,
+        });
+        req.session_id = sessionFound;
         const sessionFromDb = await Session.findOne({
           where: { session_id: sessionFound },
         });
@@ -181,12 +188,19 @@ const clearPreviousSession = async (sessionFromDb, tableId, res) => {
 };
 
 const getSessionFromFingerprint = async (fingerprintId) => {
-  const sessionFingerprintData = await SessionFingerprint.findOne({
-    where: {
-      fingerprint_id: fingerprintId,
-    },
-  });
-  return sessionFingerprintData?.session_id;
+  try {
+    console.log("fingerprintId in SessionFingerprint",fingerprintId)
+    const sessionFingerprintData = await SessionFingerprint.findOne({
+      where: {
+        fingerprint_id: fingerprintId,
+      },
+    });
+    console.log(sessionFingerprintData)
+    return sessionFingerprintData?.session_id;
+  } catch (error) {
+    console.error("Error in getSessionFromFingerprint:", error);
+    throw new Error("Failed to retrieve session from fingerprint");
+  }
 };
 
 const handleTableAvailability = async (tableId, req, res, next) => {
@@ -217,43 +231,49 @@ const handleTableAvailability = async (tableId, req, res, next) => {
 const joinExistingTable = async (req, res) => {
   try {
     const { tableId } = req.body;
+    const fingerprintId = req.body?.fingerprintId || req.cookies?.fingerprintId;
+
     if (!tableId) {
       return errorResponse(res, "Please provide tableId", 400);
     }
+    if (!fingerprintId) {
+      return errorResponse(res, "Please provide fingerprintId", 400);
+    }
+
     const sessionId = req?.cookies?.session_id;
-    if(sessionId){
-      console.log("customer already have sessionid in cookies",sessionId)
+    if (sessionId) {
+      console.log("Customer already has session ID in cookies:", sessionId);
       const sessionFromDb = await Session.findOne({
         where: { session_id: sessionId },
       });
-      console.log("removing you from previous table...")
+      console.log("Removing you from previous table...");
       const updatedUsersInvolved = [...sessionFromDb.users_involved]; // Create a copy of the array
       console.log(`Before removing element: ${updatedUsersInvolved}`);
-      if(updatedUsersInvolved.length>0){
+      if (updatedUsersInvolved.length > 0) {
         updatedUsersInvolved.pop(); // Remove the last element
       }
 
       console.log(`After removing element: ${updatedUsersInvolved}`);
 
-      console.log("removed you from previous table",updatedUsersInvolved)
-      if(updatedUsersInvolved.length == 0){
-        console.log("No one on you previous table. Expiring its session...")
+      console.log("Removed you from previous table", updatedUsersInvolved);
+      if (updatedUsersInvolved.length == 0) {
+        console.log("No one on your previous table. Expiring its session...");
         await sessionFromDb.update({
           users_involved: updatedUsersInvolved,
-          expires_at: new Date()
-        });   
-        console.log("After updating you last session",sessionFromDb)                
-      }
-      else{
-        console.log("Info: Someone is still siting on you previous table")
+          expires_at: new Date(),
+        });
+        console.log("After updating your last session", sessionFromDb);
+      } else {
+        console.log("Info: Someone is still sitting on your previous table");
         await sessionFromDb.update({
-          users_involved: updatedUsersInvolved
+          users_involved: updatedUsersInvolved,
         });
       }
-      
-      res.clearCookie('session_id')
-      console.log("cleared previous session from cookie")
+
+      res.clearCookie('session_id');
+      console.log("Cleared previous session from cookie");
     }
+
     const sessionToThisTable = await Session.findOne({
       where: {
         table_id: tableId,
@@ -262,26 +282,34 @@ const joinExistingTable = async (req, res) => {
         },
       },
     });
-    console.log("Adding you to you requested table...")
+
+    console.log("Adding you to your requested table...");
     if (!sessionToThisTable) {
-      console.log("No one sitting on requested table adding you")
+      console.log("No one sitting on requested table, adding you");
       await createSession(req, res);
-      return successResponse(res,data=null,"created session go to /menu manually")
-      // return res.redirect(`/menu/?tableId=${tableId}`);
+      return successResponse(res, null, "Created session, go to /menu manually");
     } else {
-      console.log("Adding you to requested table with your friend...")
-      const rdmCustomerId = uuidv4()
+      console.log("Adding you to requested table with your friend...");
+      const rdmCustomerId = uuidv4();
       await sessionToThisTable.update({
-        users_involved: Sequelize.fn('array_append', Sequelize.col('users_involved'), rdmCustomerId)
-      });    
-      console.log("setting cookies and updating user on table") 
-       res.cookie("session_id", sessionToThisTable.session_id, {
+        users_involved: Sequelize.fn('array_append', Sequelize.col('users_involved'), rdmCustomerId),
+      });
+
+      console.log("Setting cookies and updating user on table");
+      res.cookie("session_id", sessionToThisTable.session_id, {
         httpOnly: true,
         secure: true,
         maxAge: 30 * 60 * 1000,
       });
-      // return res.redirect(`/menu/?tableId=${tableId}`); // Redirect to the menu page
-      return successResponse(res,data=null,"joined existing table ")
+
+      if (fingerprintId) {
+        await SessionFingerprint.create({
+          fingerprint_id: fingerprintId,
+          session_id: sessionToThisTable.session_id,
+        });
+      }
+
+      return successResponse(res, null, "Joined existing table");
     }
   } catch (error) {
     return errorResponse(res, "Something went wrong", 500, {

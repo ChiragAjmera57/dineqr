@@ -31,6 +31,10 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "table_id",
       as: "table",
     });
+    Session.hasMany(models.SessionFingerprint, {
+      foreignKey: 'session_id',
+      as: 'fingerprints',
+    });
   };
 
   return Session;

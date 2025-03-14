@@ -23,6 +23,6 @@ router.use('/order', authentication, OrderRoutes);
 router.use('/ctmr/joining', customerJoiningRoute); // Ensure this line is included
 router.use('/ctmr/menu', validateAndCreateSession, customerMenuRoutes);
 router.use('/ctmr/cart', validateAndCreateSession, customerCartRoutes);
-router.use('/ctmr/order', customerOrderroutes);
+router.use('/ctmr/order',validateAndCreateSession, customerOrderroutes);
 
 module.exports = router;

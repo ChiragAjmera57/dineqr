@@ -7,7 +7,7 @@ const placeOrder = async (req, res) => {
   try {
     const { tableId, data } = req.body;
 
-    const sessionId = req.cookies.session_id;  
+    const sessionId = req.cookies.session_id || req.session_id;  
     console.log('Session ID:', sessionId);
 
     const session = await Session.findOne({ where: { session_id: sessionId } });
@@ -66,7 +66,7 @@ const placeOrder = async (req, res) => {
 
 const getAllOrderFromSession = async (req, res) => {
   try {
-    const sessionId = req.cookies.session_id;
+    const sessionId = req.cookies.session_id || req.session_id;
     console.log('Session ID:', sessionId);
     const { page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;

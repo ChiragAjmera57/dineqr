@@ -1,4 +1,4 @@
-const {Order} = require("../models");
+const {Order, OrderItem, Menu, DngTable} = require("../models");
 const { removeOrderId } = require("../services/redisPublisher");
 const { errorResponse, successResponse } = require("../utils/responseGenerator");
 
@@ -50,7 +50,7 @@ const getAllOrder = async (req, res) => {
 
 const updateOrder = async(req,res) => {
     try {
-        const {id} = req.query
+        const {id} = req.params
         const {status} = req.body
         if(!id || !status){
             return errorResponse(res,"Id & status require to update",400)

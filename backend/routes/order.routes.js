@@ -11,7 +11,7 @@ router.put('/update-order/:id',(req,res)=>{
     updateOrder(req,res)
 })
 
-router.get('/order-details/:id',(res,res)=>{
+router.get('/order-details/:id',(req,res)=>{
     getOrderDetails(req,res)
 })
 
@@ -19,7 +19,7 @@ router.get('/get-active-session',(req,res)=>{
     getTableStatus(req,res)
 })
 
-router.put('/deregister-session',(res,res)=>{
+router.put('/deregister-session',(req,res)=>{
     expireSession(req,res)
 })
 module.exports = router

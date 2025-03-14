@@ -14,7 +14,7 @@ module.exports = (sequelize) => {
       },
       admin_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           modal:'Admins',
           key: 'id'

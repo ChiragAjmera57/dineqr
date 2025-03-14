@@ -19,6 +19,11 @@ module.exports = (sequelize, DataTypes) => {
         key: "id",
       },
     },
+    users_involved:{
+      type: DataTypes.ARRAY(DataTypes.STRING), // Array of user IDs (strings)
+      allowNull: false,
+      defaultValue: []
+    },
     expires_at: { type: DataTypes.DATE, allowNull: false },
   });
   Session.associate = (models) => {

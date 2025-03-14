@@ -1,5 +1,5 @@
 const { Session, DngTable } = require("../models");
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 const { errorResponse, successResponse } = require("../utils/responseGenerator");
 
 const getTableStatus = async (req, res) => {
@@ -12,6 +12,7 @@ const getTableStatus = async (req, res) => {
         expires_at: {
           [Op.gt]: new Date(),
         },
+        users_involved: { [Sequelize.Op.ne]: [] } 
       },
       include: [
         {

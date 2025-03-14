@@ -1,4 +1,4 @@
-const { Order, Menu, OrderItem, sequelize } = require("../../models");
+const { Order, Menu, OrderItem, sequelize,Session } = require("../../models");
 const { setOrderExpiration } = require("../../services/redisPublisher");
 const { successResponse, errorResponse } = require("../../utils/responseGenerator");
 
@@ -10,9 +10,11 @@ const placeOrder = async (req, res) => {
     const sessionId = req.cookies.session_id;  
     console.log('Session ID:', sessionId);
 
-    if (!sessionId) {
-        return errorResponse(res, "Session expired, scan QR again.", 401)
+    const session = await Session.findOne({ where: { session_id: sessionId } });
+    if (!session || session.table_id !== tableId) {
+      return errorResponse(res, "Invalid session or table ID", 401);
     }
+
     const newOrder = await Order.create({
       status: "pending",
       table_id: tableId,

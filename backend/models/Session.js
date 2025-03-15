@@ -30,10 +30,7 @@ module.exports = (sequelize, DataTypes) => {
     Session.belongsTo(models.DngTable, {
       foreignKey: "table_id",
       as: "table",
-    });
-    Session.hasMany(models.SessionFingerprint, {
-      foreignKey: 'session_id',
-      as: 'fingerprints',
+      onDelete: 'SET NULL',
     });
   };
 

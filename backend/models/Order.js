@@ -18,9 +18,9 @@ module.exports = (sequelize, DataTypes) => {
       },
       table_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
-          modal:'DngTables',
+          model:'DngTables',
           key: 'id'
         }
       },
@@ -34,6 +34,7 @@ module.exports = (sequelize, DataTypes) => {
     Order.belongsTo(models.DngTable, {
       foreignKey: 'table_id',
       as: 'table',
+      onDelete: 'SET NULL',
     });
     Order.hasMany(models.OrderItem, {
       foreignKey: 'order_id',

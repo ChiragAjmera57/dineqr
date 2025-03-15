@@ -25,7 +25,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          modal:'Admins',
+          model:'Admins',
           key: 'id'
         }
     }

@@ -1,6 +1,5 @@
 const { placeOrder, getAllOrderFromSession } = require('../../controllers/customer/order.controller')
 const { validateRequest, handleValidationErrors } = require('../../middleware/orderValidator.middleware')
-const { validateSession } = require('../../middleware/validateSession.middleware')
 
 const router = require('express').Router()
 

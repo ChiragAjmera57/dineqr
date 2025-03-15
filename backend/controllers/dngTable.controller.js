@@ -50,7 +50,7 @@ const deleteTable = async (req, res) => {
     if(!table){
       return errorResponse(res, "No such table", 400)
     }
-    table.destroy()
+    await table.destroy()
     return successResponse(res, table, "Dinning table deleted", 200)
   } catch (error) {
     errorResponse(res, "something went wrong", 500, { message:error.message, stack:error.stack })

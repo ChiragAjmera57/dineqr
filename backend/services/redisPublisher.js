@@ -1,5 +1,4 @@
-const Redis = require("ioredis");
-const redis = new Redis({ host: "localhost", port: 6379 });
+const redis = require('../config/redisConfig');
 require('dotenv').config()
 const orderExpiry = process.env.ORDER_EXPIRES_IN
 

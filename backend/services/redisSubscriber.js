@@ -1,6 +1,6 @@
-const Redis = require("ioredis");
-const redisSubscriber = new Redis({ host: "localhost", port: 6379 });
 const {Order}  = require('../models') 
+const redis  = require('../config/redisConfig');
+const redisSubscriber = redis
 
 // Enable Redis Keyspace Notifications
 redisSubscriber.config("SET", "notify-keyspace-events", "Ex");
@@ -17,7 +17,7 @@ async function handleExpiredOrder(orderId) {
     }
 }
 
-// Subscribe to Redis Key Expiration Events
+// Subscribe to redisSubscriber Key Expiration Events
 redisSubscriber.psubscribe("__keyevent@0__:expired", (err, count) => {
     if (err) console.error("Failed to subscribe:", err);
     else console.log(`Subscribed to ${count} Redis event(s).`);

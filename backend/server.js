@@ -9,7 +9,10 @@ const redisSubscriber = require('./services/redisSubscriber')
 
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000', // Your Next.js frontend URL
+  credentials: true, // Required for cookies
+}));
 app.use(express.json());
 
 app.get('/',(req,res)=>{
@@ -19,7 +22,7 @@ app.get('/',(req,res)=>{
 app.use(cookieParser());
 app.use('/api/v1',v1Routes)
 
-db.sequelize.sync({alter:true}).then(() => {
+db.sequelize.authenticate().then(() => {
   redisSubscriber
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });

@@ -51,28 +51,47 @@ const createSession = async (req, res, next) => {
     }
 
     const newSessionId = uuidv4();
-    res.cookie("session_id", newSessionId, {
-      httpOnly: true,
-      secure: true,
-      maxAge: 15 * 60 * 1000,
-    });
-    console.log(`Created new session ID: ${newSessionId} for table ${tableId}`);
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 min expiry
-    const rdmCustomerId = uuidv4()
-    await Session.create({
+    const rdmCustomerId = uuidv4();
+
+    try {
+      const newSession = await Session.create({
       session_id: newSessionId,
       table_id: tableId,
       users_involved: [rdmCustomerId],
       expires_at: expiresAt,
-    });
-    console.log(`Session created successfully for table ${tableId}`);
-    if (next) {
-      console.log("next")
+      });
+
+      if (newSession) {
+        res.cookie("session_id", newSessionId, {
+          httpOnly: true,
+          secure: true, // Required for SameSite=None
+          sameSite: "None", // Cross-site requests need this
+          path: "/", // Make cookie available for the whole domain
+          maxAge: 15 * 60 * 1000, 
+        });
+      console.log(`Created new session ID: ${newSessionId} for table ${tableId}`);
+      } else {
+      console.error("Failed to create session in the database.");
+      return errorResponse(res, "Failed to create session", 500);
+      }
+
+      console.log(`Session created successfully for table ${tableId}`);
+      req.session = newSession; // Set the session in the request object
+      if (next) {
+      console.log("next");
       next();
-      console.log("========")
-    } else {
-      console.log("returning from createsession function")
+      console.log("========");
+      } else {
+      console.log("returning from createSession function");
       return;
+      }
+    } catch (error) {
+      console.error("Error while creating session:", error);
+      return errorResponse(res, "Failed to create session", 500, {
+      message: error.message,
+      stack: error.stack,
+      });
     }
   } catch (error) {
     console.error("Error in createSession:", error);
@@ -88,6 +107,9 @@ const validateAndCreateSession = async (req, res, next) => {
     const { tableId } = req.body;
     console.log(`Validating and creating session for table ${tableId}`);
     if (!tableId) return errorResponse(res, "Table ID is required", 400);
+    console.log("cookies present...")
+    console.log(JSON.stringify(req.cookies))
+    console.log("========")
     const sessionId = req.cookies.session_id;
     if (sessionId) {
       console.log("Customer already has session ID in cookies:", sessionId);
@@ -95,7 +117,7 @@ const validateAndCreateSession = async (req, res, next) => {
         where: { session_id: sessionId },
       });
       if(sessionFromDb) console.log("session found for current user",sessionFromDb)
-      if (!sessionFromDb || new Date() > new Date(sessionFromDb?.expires_at) || sessionFromDb?.table_id !== tableId) {
+      if (!sessionFromDb || new Date() > new Date(sessionFromDb?.expires_at) || sessionFromDb?.table_id != tableId) {
         console.log(`Currently sitting on ${sessionFromDb?.table_id} and wants to sit on ${tableId}`);
 
         if (req.cookies.session_id) {
@@ -133,7 +155,8 @@ const validateAndCreateSession = async (req, res, next) => {
 
           console.log("updated user_involved array in previous session")
           }
-          res.clearCookie("session_id");
+          console.log("clearing client session from its browser....")
+          res.clearCookie('session_id');
         }
         return createSession(req, res, next);
       }
@@ -211,7 +234,7 @@ const joinExistingTable = async (req, res) => {
           users_involved: updatedUsersInvolved
         });
       }
-      
+      console.log("clearing client session from its browser....")
       res.clearCookie('session_id')
       console.log("cleared previous session from cookie")
     }
@@ -238,8 +261,10 @@ const joinExistingTable = async (req, res) => {
       console.log("setting cookies and updating user on table") 
        res.cookie("session_id", sessionToThisTable.session_id, {
         httpOnly: true,
-        secure: true,
-        maxAge: 30 * 60 * 1000,
+    secure: true, 
+    sameSite: "None", 
+    path: "/", 
+    maxAge: 15 * 60 * 1000, 
       });
       // return res.redirect(`/menu/?tableId=${tableId}`); // Redirect to the menu page
       return successResponse(res,data=null,"joined existing table ")
@@ -286,7 +311,7 @@ const joinNewTable = async (req, res) => {
           users_involved: updatedUsersInvolved
         });
       }
-      
+      console.log("clearing client session from its browser....")
       res.clearCookie('session_id')
       console.log("cleared previous session from cookie")
     }

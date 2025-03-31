@@ -1,27 +1,70 @@
-const {Menu} = require("../models");
+const {Menu, Session, DngTable} = require("../models");
 const { successResponse, errorResponse } = require("../utils/responseGenerator");
 
 const getAllMenu = async (req, res) => {
-    try {
-      const { page = 1, limit = 10 } = req.query;
-      const offset = (page - 1) * limit;
-  
-      const menus = await Menu.findAndCountAll({
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-      });
-  
-      const totalPages = Math.ceil(menus.count / limit);
-      return successResponse(res, {
+  try {
+    console.log("Reached getAllMenu function...");
+
+    const session_id = req.session?.session_id || req.cookies.session_id ; // Safely access session_id
+    console.log("Session ID:", session_id);
+
+    if (!session_id) {
+      console.error("Session not found. Please scan the QR code again.");
+      return errorResponse(res, "Session not found. Please scan the QR code again.", 401);
+    }
+
+    console.log("Fetching session details...");
+    const session = await Session.findOne({
+      where: { session_id },
+      include: [
+        {
+          model: DngTable,
+          as: "table",
+        },
+      ],
+    });
+
+    if (!session || !session.table) {
+      console.error("Invalid session or table not found.");
+      return errorResponse(res, "Invalid session or table not found.", 404);
+    }
+
+    const admin_id = session.table.admin_id;
+    console.log("Admin ID (restaurant ID):", admin_id);
+
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+    console.log(`Pagination details - Page: ${page}, Limit: ${limit}, Offset: ${offset}`);
+
+    console.log("Fetching menu items...");
+    const menus = await Menu.findAndCountAll({
+      where: { admin_id },
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    });
+
+    const totalPages = Math.ceil(menus.count / limit);
+    console.log("Menus fetched successfully:");
+
+    return successResponse(
+      res,
+      {
         menus: menus.rows,
         totalItems: menus.count,
         totalPages,
         currentPage: parseInt(page),
-      }, "menus successfully fetched");
-    } catch (error) {
-      return errorResponse(res, "Something went wrong", 500, { message:error.message, stack:error.stack });
-    }
-  };
+      },
+      "Menus successfully fetched"
+    );
+  } catch (error) {
+    console.error("Error occurred in getAllMenu:", error.message);
+    console.error("Stack trace:", error.stack);
+    return errorResponse(res, "Something went wrong", 500, {
+      message: error.message,
+      stack: error.stack,
+    });
+  }
+};
 
 const addMenu =  async(req,res) => {
     try {

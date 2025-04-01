@@ -1,28 +1,65 @@
+"use client";
+import fetchMenuList from "@/services/fetchMenuList";
 import dynamic from "next/dynamic";
-import React from "react";
-const MenuItemWithCounter = dynamic(()=>import('@/component/MenuItemWithCounter'))
-const page = () => {
+import React, { use, useEffect, useState } from "react";
+
+const MenuItemWithCounter = dynamic(() => import("@/component/MenuItemWithCounter"));
+const CategorySliderComponent = dynamic(() => import("@/component/CategorySlider"));
+
+const Page = ({ params }) => {
+  const [menuData, setMenuData] = useState(null); 
+  const [error, setError] = useState(null);
+  const awaitedParams = use(params)
+  const tableId = awaitedParams?.tableId
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (!tableId) {
+          throw new Error("Table ID is missing");
+        }
+        const response = await fetchMenuList(tableId); 
+        console.log("Response on PAGE.JS FILE",response)
+        if(response.success) setMenuData(response?.data?.menus)
+        console.log(response?.data?.menus,"response?.data?.menus")
+      } catch (err) {
+        console.error("Error fetching menu data at PAGE.JS:", err);
+        setError(err);
+      }
+    };
+
+    fetchData();
+  }, [tableId]);
+
+  if (error) {
+    throw error
+  }
+
+  if (!menuData) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <div className="">
+    <div className="select-none ">
       <div className="p-4 bg-[#E33232]">
         <p className="text-center text-[#FFFFFF] font-semibold text-shadow">
-          Mepel Street 2nd floor, ....
+          Mapel Street 2nd floor, ....
         </p>
       </div>
-      <div className="p-1.5 pt-2 bg-[#D9D9D9] w-full overflow-x-auto whitespace-nowrap space-x-4 flex no-scrollbar">
-        <p className="font-medium text-[13px]">Recommonded</p>
-        <p className="font-medium text-[13px]">Main Course</p>
-        <p className="font-medium text-[13px]">Starters</p>
-        <p className="font-medium text-[13px]">Drinks</p>
-        <p className="font-medium text-[13px]">Starters</p>
-        <p className="font-medium text-[13px]">Salad</p>
+      <CategorySliderComponent />
+      <div className="min-h-screen bg-[#72727249]">
+        <div className="p-2.5 pb-1">
+          <p className="text-[14px] text-[#5F5F5F]">STARTERS</p>
+        </div>
+        {
+          menuData?.map((menuItem,index)=>{
+            console.log(index)
+           return <MenuItemWithCounter key={index}  /> 
+          })
+        }
       </div>
-      <div className="p-2.5 pb-1 mt-3 ">
-        <p className="text-[14px] text-[#5F5F5F]">STARTERS</p>
-      </div>
-      <MenuItemWithCounter />
     </div>
   );
 };
 
-export default page;
+export default Page;

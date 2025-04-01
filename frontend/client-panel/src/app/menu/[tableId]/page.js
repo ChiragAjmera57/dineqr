@@ -18,6 +18,8 @@ const Page = ({ params }) => {
         if (!tableId) {
           throw new Error("Table ID is missing");
         }
+        localStorage.clear("tableId")
+        localStorage.setItem("tableId",tableId)
         const response = await fetchMenuList(tableId); 
         console.log("Response on PAGE.JS FILE",response)
         if(response.success) setMenuData(response?.data?.menus)

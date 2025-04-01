@@ -1,12 +1,11 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
-
 const ErrorSvgComponent = dynamic(() => import('@/component/icons/error'));
 
 const ErrorAlert = ({
   message = "Something went wrong",
   msgDetail = "Please try again after sometime.",
-  buttons = [], // Array of button configurations
+  buttons = [], 
 }) => {
   return (
     <div className="flex flex-col p-3.5 items-center border-1 border-[#eaeaea] m-1.5 rounded-2xl mt-0 shadow-md w-full">
@@ -19,7 +18,7 @@ const ErrorAlert = ({
         {buttons.map((button, index) => (
           <button
             key={index}
-            onClick={button.onClick} // Attach the action
+            onClick={button.onClick}
             className={`flex items-center justify-center p-2 rounded-md text-white text-[13px] w-fit h-10 ${
               button.color || 'bg-[#28aa63]'
             }`}

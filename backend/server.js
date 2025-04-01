@@ -10,8 +10,8 @@ const redisSubscriber = require('./services/redisSubscriber')
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: 'http://localhost:3000', // Your Next.js frontend URL
-  credentials: true, // Required for cookies
+  origin: ['http://192.168.1.8:3000','http://localhost:3000'], 
+  credentials: true, 
 }));
 app.use(express.json());
 

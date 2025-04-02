@@ -21,7 +21,7 @@ const Error = ({ error, reset }) => {
   const joinTable = async (option) => {
     try {
       if (!tableId) {
-        throw new Error("Table id not in stroage!");
+        throw new Error("Table id not in storage!");
       }
       const res =
         (await option) == "existing"

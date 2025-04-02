@@ -65,9 +65,9 @@ const createSession = async (req, res, next) => {
       if (newSession) {
         res.cookie("session_id", newSessionId, {
           httpOnly: true,
-          secure: true, // Required for SameSite=None
-          sameSite: "None", // Cross-site requests need this
-          path: "/", // Make cookie available for the whole domain
+          // secure: true, // Required for SameSite=None
+          // sameSite: "None", // Cross-site requests need this
+          // path: "/", // Make cookie available for the whole domain
           maxAge: 15 * 60 * 1000, 
         });
       console.log(`Created new session ID: ${newSessionId} for table ${tableId}`);
@@ -250,7 +250,7 @@ const joinExistingTable = async (req, res) => {
     if (!sessionToThisTable) {
       console.log("No one sitting on requested table adding you")
       await createSession(req, res);
-      return successResponse(res,data={redirectUrl:`http://localhost:3000/menu/${tableId}`},"created session go to /menu manually")
+      return successResponse(res,data={redirectUrl:`http://192.168.1.8:3000/menu/${tableId}`},"created session go to /menu manually")
     } else {
       console.log("Adding you to requested table with your friend...")
       const rdmCustomerId = uuidv4()
@@ -260,12 +260,12 @@ const joinExistingTable = async (req, res) => {
       console.log("setting cookies and updating user on table") 
        res.cookie("session_id", sessionToThisTable.session_id, {
         httpOnly: true,
-    secure: true, 
-    sameSite: "None", 
-    path: "/", 
+    // secure: true, 
+    // sameSite: "None", 
+    // path: "/", 
     maxAge: 15 * 60 * 1000, 
       });
-      return successResponse(res,data={redirectUrl:`http://localhost:3000/menu/${tableId}`},"joined existing table ")
+      return successResponse(res,data={redirectUrl:`http://192.168.1.8:3000/menu/${tableId}`},"joined existing table ")
     }
   } catch (error) {
     return errorResponse(res, "Something went wrong", 500, {
@@ -319,7 +319,7 @@ const joinNewTable = async (req, res) => {
       // Create a new session for the new table
       req.body.tableId = newTable.id;
       await createSession(req, res);
-      return successResponse(res,data={redirectUrl:`http://localhost:3000/menu/${newTable.id}`},"joined new table")
+      return successResponse(res,data={redirectUrl:`http://192.168.1.8:3000/menu/${newTable.id}`},"joined new table")
     } catch (error) {
       return errorResponse(res, "Something went wrong", 500, {
         message: error.message,

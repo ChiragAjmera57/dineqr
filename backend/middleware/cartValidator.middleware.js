@@ -7,8 +7,8 @@ const validateCartItem = [
     .withMessage("menu_item_id must be a positive integer"),
 
   body("quantity")
-    .isInt({ min: 1 })
-    .withMessage("quantity must be a positive integer"),
+    .isInt({ min: 0 })
+    .withMessage("quantity must be 0 or greater"),
 
   (req, res, next) => {
     const errors = validationResult(req);

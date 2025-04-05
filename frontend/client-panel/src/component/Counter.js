@@ -1,4 +1,3 @@
-import React from "react";
 
 const Counter = ({ alreadyInCart, quantity, itemId, incrementItemCount, decrementItemCount }) => {
   const incrementItem = () => {

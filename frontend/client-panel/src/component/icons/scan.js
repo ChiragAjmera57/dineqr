@@ -1,4 +1,3 @@
-import React from 'react'
 
 const ScanQr = ({width=24,height=24,className="",color="currentColor"}) => {
   return (

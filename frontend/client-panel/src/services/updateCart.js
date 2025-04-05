@@ -1,5 +1,7 @@
-const updateCartApi = async (tableId,menu_item_id,quantity) => {
+const updateCartApi = async ({tableId,updatedCart}) => {
   console.log("=====called updateCart api======")
+  console.log("tableid",tableId)
+  console.log("updatedCart",updatedCart)
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
       
@@ -14,7 +16,7 @@ const updateCartApi = async (tableId,menu_item_id,quantity) => {
       const response = await fetch(`${backendUrl}/ctmr/cart/update-to-cart`, {
         credentials: 'include',
         method: 'POST',
-        body: JSON.stringify({ tableId,menu_item_id,quantity }),
+        body: JSON.stringify({ tableId,updatedCartData:updatedCart }),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -33,10 +35,11 @@ const updateCartApi = async (tableId,menu_item_id,quantity) => {
       console.log(err)
         throw { 
           status: err.status || 500, 
-          statusText: err.statusText || 'Unknown Error', 
+          statusText: err?.statusText || 'Unknown Error', 
           error: err.error || 'No error details available' 
         };
       }
+
   };
   
 

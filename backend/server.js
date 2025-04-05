@@ -10,7 +10,7 @@ const redisSubscriber = require('./services/redisSubscriber')
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: ['http://192.168.1.8:3000','http://localhost:3000'], 
+  origin: ['http://192.168.1.7:3000','http://localhost:3000'], 
   credentials: true, 
 }));
 app.use(express.json());

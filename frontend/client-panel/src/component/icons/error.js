@@ -1,4 +1,3 @@
-import React from "react";
 
 const ErrorSvg = ({ width = 24, height = 24, className = "" }) => {
   return (

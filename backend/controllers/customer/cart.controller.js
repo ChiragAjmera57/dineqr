@@ -5,21 +5,26 @@ const { redisClient } = require("../../config/redisConfig");
 const updateCart = async (req, res) => {
   try {
     const { session_id } = req.cookies;
-    const { menu_item_id, quantity } = req.body;
+    const { updatedCartData } = req.body;
 
     if (!session_id) return errorResponse(res, "Session not found", 401);
-
+    console.log("updatedCartData====backend", updatedCartData);
     const cartKey = `cart:${session_id}`;
 
-    if (quantity <= 0) {
-      // Remove the item from the cart if quantity is 0 or less
-      await redisClient.hdel(cartKey, menu_item_id);
-      return successResponse(res, null, "Item removed from cart successfully", 200);
-    } else {
-      // Update the item quantity in the cart
-      await redisClient.hset(cartKey, menu_item_id, quantity);
-      return successResponse(res, null, "Cart updated successfully", 200);
+    for (const menuId in updatedCartData) {
+      const { quantity } = updatedCartData[menuId];
+      console.log("menuId", menuId);
+      console.log("quantity", quantity);
+      if (quantity <= 0) {
+        // Remove the item from the cart if quantity is 0 or less
+        await redisClient.hdel(cartKey, menuId);
+      } else {
+        // Update the item quantity in the cart
+        await redisClient.hset(cartKey, menuId, quantity);
+      }
     }
+
+    return successResponse(res, null, "Cart updated successfully", 200);
   } catch (error) {
     return errorResponse(res, "Error updating cart", 500, { message: error.message, stack: error.stack });
   }
@@ -34,6 +39,7 @@ const getCart = async (req, res) => {
     const cartKey = `cart:${session_id}`;
     const cartItems = await redisClient.hgetall(cartKey);
 
+    console.log(cartItems,"cartItems")
     if (!cartItems || Object.keys(cartItems).length === 0) {
       return successResponse(res, {}, "Cart is empty", 200); // Return an empty object if the cart is empty
     }

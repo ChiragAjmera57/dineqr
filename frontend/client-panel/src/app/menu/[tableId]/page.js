@@ -1,115 +1,145 @@
 "use client";
-import RightArrow from "@/component/icons/rightArrow";
+
+import React, { use, useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import CartToast from "@/component/CartToast";
 import fetchCart from "@/services/fetchCart";
 import fetchMenuList from "@/services/fetchMenuList";
 import updateCartApi from "@/services/updateCart";
-import dynamic from "next/dynamic";
-import React, { use, useEffect, useState } from "react";
+import debounce from "@/utils/debounce";
 
-const MenuItemWithCounter = dynamic(() =>
-  import("@/component/MenuItemWithCounter")
-);
-const CategorySliderComponent = dynamic(() =>
-  import("@/component/CategorySlider")
-);
+const MenuItemWithCounter = dynamic(() => import("@/component/MenuItemWithCounter"));
+const CategorySliderComponent = dynamic(() => import("@/component/CategorySlider"));
 
 const Page = ({ params }) => {
   const [menuData, setMenuData] = useState(null);
-  // const [cartData, setCartData] = useState(null);
+  const [cartData, setCartData] = useState({});
+  const [initialCartData, setInitialCartData] = useState({});
+  const [updatedMenuIds, setUpdatedMenuIds] = useState([]);
+  const [totalItem, setTotalItem] = useState(0);
   const [error, setError] = useState(null);
-  const [itemCounter, setCounter] = useState({});
-  const awaitedParams = use(params);
-  const tableId = awaitedParams?.tableId;
+  const { tableId: tableIdString } = use(params) || {};
+  const tableId = Number(tableIdString); 
+  
+  // Debounced update cart
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!tableId) {
-          throw new Error("Table ID is missing");
-        }
-        localStorage.clear("tableId");
-        localStorage.setItem("tableId", tableId);
-        const response = await fetchMenuList(tableId);
-        console.log("Response on PAGE.JS FILE", response);
-        if (response.success) setMenuData(response?.data?.menus);
-        console.log(response?.data?.menus, "response?.data?.menus");
-      } catch (err) {
-        console.error("Error fetching menu data at PAGE.JS:", err);
-        setError(err);
+
+  const fetchData = useCallback(async () => {
+    if (!tableId) {
+      setError(new Error("Table ID is missing"));
+      return;
+    }
+
+    try {
+      const [menuRes, cartRes] = await Promise.all([
+        fetchMenuList(tableId),
+        fetchCart(tableId),
+      ]);
+
+      if (menuRes.success) {
+        setMenuData(menuRes?.data?.menus || []);
       }
-    };
 
-    const fetchCartItem = async () => {
-      try {
-        if (!tableId) {
-          throw new Error("Table ID is missing!");
-        }
-        const responseCart = await fetchCart(tableId);
-        console.log("RESPONSE for cart on PAGE.JS", responseCart);
-        if (responseCart.success){
-          // setCartData(responseCart?.data);
-          const serialized_obj = {};
-          Object.entries(responseCart?.data).forEach(([key, value]) => {
-            serialized_obj[key] = value.quantity;
-          });
-          console.log(serialized_obj, "serialized_obj");
-          setCounter(serialized_obj);
-        } 
-      } catch (error) {
-        setError(error);
+      if (cartRes.success) {
+        const cart = cartRes?.data || {};
+        setCartData(cart);
+        setInitialCartData(cart);
+        setTotalItem(
+          Object.values(cart).reduce((sum, item) => sum + (item.quantity || 0), 0)
+        );
       }
-    };
 
-    fetchData();
-    fetchCartItem();
+      localStorage.setItem("tableId", tableId);
+
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError(err);
+    }
   }, [tableId]);
 
-  const debounce = (func, delay) => {
-    let timer;
-    return (...args) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => func(...args), delay);
-    };
-  };
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  const updateCart = debounce(async (itemId, newQuantity) => {
-    try {
-      const response = await updateCartApi(tableId, itemId, newQuantity);
-      if (!response.success) {
-        throw new Error("Failed to update cart");
+  const updateCartDebounced = useCallback(
+    debounce(async ({ tableId, updatedCart }) => {
+      try {
+        // Filter the updatedCart to only include items in updatedMenuIds
+        console.log(updatedCart,"updatedCart at deboucne")
+        console.log("Updated cart before filtering:", updatedCart);
+        console.log("Updated menu IDs:", updatedMenuIds);
+
+        const filteredCart = Object.keys(updatedCart)
+          .filter((id) => updatedMenuIds.includes(Number(id)))
+          .reduce((acc, id) => {
+            acc[id] = updatedCart[id];
+            return acc;
+          }, {});
+
+        console.log("Filtered cart after processing:", filteredCart);
+
+        console.log("Filtered cart payload:", filteredCart);
+
+        const response = await updateCartApi(tableId, filteredCart);
+        if (!response.success) throw new Error("Failed to update cart");
+        console.log("Cart updated successfully:", response);
+      } catch (err) {
+        console.error("Error updating cart:", err);
+        setError(err);
       }
-      console.log("Cart updated successfully:", response);
-    } catch (error) {
-      console.error("Error updating cart:", error);
-      setError(error);
-    }
-  }, 500); // 500ms debounce delay
+    }, 2000),
+    [updatedMenuIds] // Include updatedMenuIds as a dependency
+  );
+  
+  // Then in your increment/decrement functions:
+  const incrementItemCount = useCallback((itemId) => {
+    setCartData((prev) => {
+      const quantity = (prev[itemId]?.quantity || 0) + 1;
+      const updatedCart = {
+        ...prev,
+        [itemId]: { quantity },
+      };
+  
+      // Track updates
+      const initialQuantity = initialCartData[itemId]?.quantity || 0;
+      if (quantity !== initialQuantity) {
+        setUpdatedMenuIds((prevIds) => [...new Set([...prevIds, itemId])]);
+      } else {
+        setUpdatedMenuIds((prevIds) => prevIds.filter((id) => id !== itemId));
+      }
+  
+      // Pass the updatedCart directly
+      updateCartDebounced({ tableId, updatedCart });
+  
+      return updatedCart;
+    });
+  
+    setTotalItem((prev) => prev + 1);
+  }, [initialCartData, tableId, updateCartDebounced]);
 
-  const incrementItemCount = (itemId) => {
-    console.log(itemId, "Incrementing item in PAGE.JS");
-    const currQuantity = itemCounter[itemId] || 0;
-    const newQuantity = currQuantity + 1;
-
-    setCounter((prev) => ({
-      ...prev,
-      [itemId]: newQuantity,
-    }));
-
-    updateCart(itemId, newQuantity);
-  };
-
-  const decrementItemCount = (itemId) => {
-    console.log(itemId, "Decrementing item in PAGE.JS");
-    const currQuantity = itemCounter[itemId] || 0;
-    const newQuantity = Math.max(currQuantity - 1, 0);
-
-    setCounter((prev) => ({
-      ...prev,
-      [itemId]: newQuantity,
-    }));
-
-    updateCart(itemId, newQuantity);
-  };
+  const decrementItemCount = useCallback((itemId) => {
+    setCartData((prev) => {
+      const quantity = Math.max((prev[itemId]?.quantity || 0) - 1, 0);
+      const updatedCart = {
+        ...prev,
+        [itemId]: { quantity },
+      };
+  
+      const initialQuantity = initialCartData[itemId]?.quantity || 0;
+      if (quantity !== initialQuantity) {
+        setUpdatedMenuIds((prevIds) => [...new Set([...prevIds, itemId])]);
+      } else {
+        setUpdatedMenuIds((prevIds) => prevIds.filter((id) => id !== itemId));
+      }
+  
+      updateCartDebounced({ tableId, updatedCart });
+  
+      return updatedCart;
+    });
+  
+    setTotalItem((prev) => Math.max(prev - 1, 0));
+  }, [initialCartData, tableId, updateCartDebounced]);
+  
   if (error) {
     throw error;
   }
@@ -117,7 +147,7 @@ const Page = ({ params }) => {
   if (!menuData) {
     return <div>Loading...</div>;
   }
-
+  
   return (
     <div className="select-none ">
       <div className="p-4 bg-[#E33232]">
@@ -132,26 +162,21 @@ const Page = ({ params }) => {
         </div>
         {menuData?.map((menuItem, index) => {
           console.log(index);
-          const inCart = itemCounter[menuItem.id] || false;
+          const inCart = cartData[menuItem.id] || false;
+          const quantity = cartData?.[menuItem.id]?.quantity || 0;
           return (
             <MenuItemWithCounter
             menuItem={menuItem}
-            quantity={itemCounter[menuItem.id] || 0}
+            quantity={quantity}
               alreadyInCart={inCart}
               decrementItemCount={decrementItemCount}
               incrementItemCount={incrementItemCount}
-              key={index}
+              key={menuItem.id}
             />
           );
         })}
       </div>
-      <div className="sticky bottom-0 p-3 text-center space-y-1 bg-[#E33232]">
-        <div className="flex flex-row text-center items-center justify-center space-x-2 content-center">
-        <p className="text-center text-[#FFFFFF] font-semibold ">1 item added!</p>
-        <div>{<RightArrow className="text-white" color="white" />}</div>
-        </div>
-        <p className="text-center text-[#FFFFFF] font-semibold ">1 item added to you cart!</p>
-      </div>
+      {totalItem>0 && <CartToast itemCount={totalItem} />}
     </div>
   );
 };

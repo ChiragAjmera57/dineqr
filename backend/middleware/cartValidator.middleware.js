@@ -9,22 +9,22 @@ const validateCartItem = [
   body("updatedCartData")
     .custom((value) => {
       if (typeof value !== "object" || Array.isArray(value)) {
-        throw new Error("updatedcartdata must be an object");
+        throw new Error("updatedCartData must be an object");
       }
-      for (const key in value) {
+      const keys = Object.keys(value);
+      if (keys.length === 0) {
+        throw new Error("updatedCartData cannot be empty");
+      }
+      const isValid = keys.every((key) => {
         const item = value[key];
-        if (
-          
-          !item.quantity ||
-          typeof item.quantity !== "number" ||
-          item.quantity < 0
-        ) {
-          throw new Error("Each item in updatedcartdata must have valid quantity field");
-        }
+        return typeof item.quantity === "number" && item.quantity >= 0;
+      });
+      if (!isValid) {
+        throw new Error("Each item in updatedCartData must have a valid quantity field");
       }
       return true;
     })
-    .withMessage("updatedcartdata must be a valid object with valid items"),
+    .withMessage("updatedCartData must be a valid object with valid items"),
 
   (req, res, next) => {
     const errors = validationResult(req);

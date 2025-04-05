@@ -1,11 +1,11 @@
 
 const Counter = ({ alreadyInCart, quantity, itemId, incrementItemCount, decrementItemCount }) => {
   const incrementItem = () => {
-    incrementItemCount(itemId);
+    incrementItemCount(itemId, quantity + 1);
   };
 
   const decrementItem = () => {
-    decrementItemCount(itemId);
+    decrementItemCount(itemId, quantity - 1 > 0 ? quantity - 1 : 0);
   };
 
   if (alreadyInCart && quantity > 0) {

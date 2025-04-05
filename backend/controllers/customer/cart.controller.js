@@ -4,7 +4,7 @@ const { redisClient } = require("../../config/redisConfig");
 
 const updateCart = async (req, res) => {
   try {
-    const { session_id } = req.cookies;
+    const { session_id } = req?.cookies || req?.session;
     const { updatedCartData } = req.body;
 
     if (!session_id) return errorResponse(res, "Session not found", 401);
@@ -39,9 +39,8 @@ const getCart = async (req, res) => {
     const cartKey = `cart:${session_id}`;
     const cartItems = await redisClient.hgetall(cartKey);
 
-    console.log(cartItems,"cartItems")
     if (!cartItems || Object.keys(cartItems).length === 0) {
-      return successResponse(res, {}, "Cart is empty", 200); // Return an empty object if the cart is empty
+      return successResponse(res, {}, "Cart is empty", 200); 
     }
 
     const cartData = {};

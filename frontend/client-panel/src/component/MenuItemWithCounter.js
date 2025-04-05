@@ -1,5 +1,4 @@
 import dynamic from 'next/dynamic'
-import { memo } from 'react'
 const CounterComponent = dynamic(()=>import('@/component/Counter'))
 const MenuItemComponent = dynamic(()=>import('@/component/MenuItem'))
 
@@ -11,9 +10,4 @@ const MenuItemWithCounter = ({alreadyInCart, quantity, menuItem, incrementItemCo
       </div>
   )
 }
-export default memo(MenuItemWithCounter, (prevProps, nextProps) => {
-  return (
-    prevProps.quantity === nextProps.quantity &&
-    prevProps.menuItem.id === nextProps.menuItem.id
-  );
-});
+export default MenuItemWithCounter

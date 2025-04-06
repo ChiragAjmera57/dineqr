@@ -7,76 +7,145 @@ import fetchCart from "@/services/fetchCart";
 import updateCartApi from "@/services/updateCart";
 import BackArrow from "@/component/icons/back";
 import Cross from "@/component/icons/cross";
+import { useRouter } from "next/navigation";
+import placeOrderApi from "@/services/placeOrder";
 
 const MenuItemWithCounter = dynamic(() => import("@/component/MenuItemWithCounter"));
 
 const Page = () => {
   const { cartData, setCartData } = useCartContext();
   const [isLoading, setIsLoading] = useState(false);
+  const [updatedCart, setUpdatedCart] = useState({});
+  const [error, setError] = useState(null)
+  const [tableId, setTableId] = useState(null)
+  const [isUpdatingCart, setIsUpdatingCart] = useState(false);
+  const router = useRouter();
+  const [orderPlaceLoading, setOrderLoading] = useState(false)
 
-  // Fetch cart on hard refresh
+
   useEffect(() => {
     const handleFetchOnRefresh = async () => {
       const table = Number(localStorage.getItem("tableId"));
-      if (!table) return;
-
-      if (performance.navigation.type === 1) {
-        // If page was refreshed (type 1 = Reload)
-        setIsLoading(true);
-        try {
-          const response = await fetchCart(table);
-          if (response?.success) {
-            setCartData(response.data || {});
-          }
-        } catch (error) {
-          console.error("Error fetching cart data:", error);
-        } finally {
-          setIsLoading(false);
+      if (!table) {
+        // setError("table not found in storage!")
+        throw Error("table id not found")
+      };
+      setTableId(table)
+      if (!cartData || Object.keys(cartData).length === 0) {
+      setIsLoading(true);
+      try {
+        console.log("========calling fetch cart api from cart page====")
+        const response = await fetchCart(table);
+        if (response?.success) {
+        localStorage.removeItem("cartData")
+        setCartData(response.data || {});
         }
+      } catch (error) {
+        setError(error)
+        console.error("Error fetching cart data:", error);
+      } finally {
+        setIsLoading(false);
+      }
       }
     };
 
     handleFetchOnRefresh();
   }, [setCartData]);
 
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isUpdatingCart) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+  
+    const handleRouteChangeStart = (url) => {
+      if (isUpdatingCart) {
+        // Optional: Show some loading indicator
+        console.log("Prevent route change until cart is updated");
+        throw "Cart is updating, navigation blocked.";
+      }
+    };
+  
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    router.events?.on('routeChangeStart', handleRouteChangeStart);
+  
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      router.events?.off('routeChangeStart', handleRouteChangeStart);
+    };
+  }, [isUpdatingCart, router.events]);
+
   const updateCartWithLatestData = useCallback(async (currentUpdatedCart) => {
     try {
-      const table = Number(localStorage.getItem("tableId"));
-      if (!table) return;
-      await updateCartApi({ tableId: table, updatedCart: currentUpdatedCart });
+      setIsUpdatingCart(true);
+      const response = await updateCartApi({ tableId, updatedCart: currentUpdatedCart });
+      console.log("RESPONSE FROM UPDATE API", response);
     } catch (error) {
-      console.error("Error updating cart:", error);
+      setError(error);
+      console.log("error", error)
+    } finally {
+      setIsUpdatingCart(false);
     }
-  }, []);
+  }, [tableId]);
 
-  const updateApiDebounced = useMemo(() => debounce(updateCartWithLatestData, 2000), [updateCartWithLatestData]);
+  const updateApiDebounced = useMemo(
+    () => debounce(updateCartWithLatestData, 2000),
+    [updateCartWithLatestData]
+  );
 
-  const increment = (itemId, quantity) => {
+  const increment = (item, quantity) => {
+    console.log("ITEM AND QUNATITY RECIEVED..",item,"QUANTITY",quantity)
     setCartData((prev) => ({
       ...prev,
-      [itemId]: { ...prev[itemId], quantity },
+      [item.id]: {...item,quantity:quantity},
     }));
-    updateApiDebounced({
-      ...cartData,
-      [itemId]: { ...cartData[itemId], quantity },
+    setUpdatedCart((prev) => {
+      const newUpdatedCart = {
+        ...prev,
+        [item.id]: {...item,quantity:quantity},
+      };
+      console.log("callling api....")
+      updateApiDebounced(newUpdatedCart);
+      return newUpdatedCart;
     });
   };
 
-  const decrement = (itemId, quantity) => {
+  const decrement = (item, quantity) => {
+    console.log("ITEM AND QUANTITY RECIEVED AT DECREMENT...",item,"QUANTITY",quantity)
     setCartData((prev) => ({
       ...prev,
-      [itemId]: { ...prev[itemId], quantity },
+      [item.id]: {...item,quantity:quantity},
     }));
-    updateApiDebounced({
-      ...cartData,
-      [itemId]: { ...cartData[itemId], quantity },
+    setUpdatedCart((prev) => {
+      const newUpdatedCart = {
+        ...prev,
+        [item.id]: {...item,quantity:quantity},
+      };
+      updateApiDebounced(newUpdatedCart);
+      return newUpdatedCart;
     });
   };
-
+  const placeOrder = async() => {
+    try {
+      setOrderLoading(true)
+      const response = await placeOrderApi({tableId})
+      if(response.success){
+        setOrderLoading(false)
+        console.log("ORDER PLACED!!")
+      }
+    } catch (error) {
+      setOrderLoading(false)
+      setError(error)
+      throw error
+    }
+  }
+  if(error) throw error
   if (isLoading) return <div>Loading...</div>;
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen select-none">
       {/* Header */}
       <div className="flex justify-between p-5 bg-[#E33232] text-white items-center shadow sticky top-0">
         <BackArrow width={20} />
@@ -90,8 +159,8 @@ const Page = () => {
           (item) =>
             item.quantity > 0 && (
               <MenuItemWithCounter
-                key={item.id}
-                alreadyInCart
+                key={item?.id}
+                alreadyInCart={item.quantity > 0}
                 incrementItemCount={increment}
                 decrementItemCount={decrement}
                 menuItem={item}
@@ -108,9 +177,15 @@ const Page = () => {
           <p className="font-semibold">₹ 454</p>
         </div>
         <hr className="border-gray-300 my-4" />
-        <div className="flex items-center justify-center mx-15 p-2 rounded-2xl bg-[#E33232] text-white font-bold">
+        {!Object.keys(cartData).length == 0 && (orderPlaceLoading?<div className="flex items-center justify-center mx-17 p-4 rounded-2xl bg-[#E33232] text-white font-bold space-x-2" onClick={()=>placeOrder()}> 
+        <div class="w-3 h-3 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+  <div class="w-3 h-3 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+  <div class="w-3 h-3 bg-white rounded-full animate-bounce"></div>
+  <div class="w-3 h-3 bg-white rounded-full animate-bounce [animation-delay:0.15s]"></div>
+        </div>:<div className="flex items-center justify-center mx-15 p-2 rounded-2xl bg-[#E33232] text-white font-bold" onClick={()=>placeOrder()}>
           CHECK OUT
-        </div>
+        </div>)}
+        
       </div>
     </div>
   );

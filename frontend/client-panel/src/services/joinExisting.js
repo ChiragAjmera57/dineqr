@@ -9,7 +9,7 @@ const joinExisting = async (tableId) => {
       if (!tableId) {
         throw new Error("Table ID is required");
       }
-      
+      localStorage.clear()
       const response = await fetch(`${backendUrl}/ctmr/joining/join-exist-table`, {
         credentials: 'include',
         method: 'POST',

@@ -15,9 +15,9 @@ const Page = ({ params }) => {
 
   const { menuData, cartData, totalItem, error, increment, decrement } = useCart(tableId);
 
-  if (!menuData || !cartData) {
-    return <div>...Loading!</div>;
-  }
+  // if (!menuData || !cartData) {
+  //   return <div>...Loading!</div>;
+  // }
 
   if (error) {
     throw error;
@@ -42,7 +42,7 @@ const Page = ({ params }) => {
               key={menuItem.id}
               menuItem={menuItem}
               quantity={quantity}
-              alreadyInCart={!!cartData[menuItem.id]}
+              alreadyInCart={cartData[menuItem.id]}
               decrementItemCount={decrement}
               incrementItemCount={increment}
             />

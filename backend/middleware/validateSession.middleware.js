@@ -210,8 +210,13 @@ const joinExistingTable = async (req, res) => {
       const sessionFromDb = await Session.findOne({
         where: { session_id: sessionId },
       });
-      console.log("removing you from previous table...")
-      const updatedUsersInvolved = [...sessionFromDb?.users_involved]; // Create a copy of the array
+      if (!sessionFromDb) {
+        console.log("Session ID not found in the database. Clearing client session from its browser...");
+        res.clearCookie('session_id');
+        return errorResponse(res, "Session not found. Please try again.", 404);
+      }
+      console.log("Removing you from previous table...");
+      const updatedUsersInvolved = [...sessionFromDb.users_involved]; // Create a copy of the array
       console.log(`Before removing element: ${updatedUsersInvolved}`);
       if(updatedUsersInvolved.length>0){
         updatedUsersInvolved.pop(); // Remove the last element
@@ -277,7 +282,11 @@ const joinExistingTable = async (req, res) => {
 
 const joinNewTable = async (req, res) => {
     try {
-      console.log("joinNewTable")
+      const { tableId } = req.body;
+    if (!tableId) {
+      return errorResponse(res, "Please provide tableId", 400);
+    }
+      console.log("joinNewTable",tableId)
       const tempTableName = uuidv4().split('-').slice(0, 5).join('-');
       const sessionId = req?.cookies?.session_id;
     if(sessionId){
@@ -285,6 +294,12 @@ const joinNewTable = async (req, res) => {
       const sessionFromDb = await Session.findOne({
         where: { session_id: sessionId },
       });
+
+      if (!sessionFromDb) {
+        console.log("Session ID not found in the database. Clearing client session from its browser...");
+        res.clearCookie('session_id');
+        return errorResponse(res, "Session not found. Please try again.", 404);
+      }
       console.log("removing you from previous table...")
       const updatedUsersInvolved = [...sessionFromDb?.users_involved]; // Create a copy of the array
       console.log(`Before removing element: ${updatedUsersInvolved}`);
@@ -313,8 +328,16 @@ const joinNewTable = async (req, res) => {
       res.clearCookie('session_id')
       console.log("cleared previous session from cookie")
     }
+      const foundTable = await DngTable.findByPk(tableId)
+      if(!foundTable){
+        return errorResponse(res,"Something went wrong",500,{
+          message : "No table found!"
+        })
+      }
+      console.log("found table",foundTable)
+      const adminId = foundTable.admin_id
       // Create a new table
-      const newTable = await DngTable.create({ name: tempTableName });
+      const newTable = await DngTable.create({ name: tempTableName, admin_id:adminId });
       
       // Create a new session for the new table
       req.body.tableId = newTable.id;

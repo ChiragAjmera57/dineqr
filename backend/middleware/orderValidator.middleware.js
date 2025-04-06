@@ -3,10 +3,6 @@ const { errorResponse } = require('../utils/responseGenerator');
 
 // Validation rules
 const validateRequest = [
-    body('data').isArray().withMessage('data must be an array'),
-    body('data.*.menuId').isInt().withMessage('menuId must be an integer'),
-    body('data.*.quantity').isInt({ min: 1 }).withMessage('quantity must be a positive integer'),
-
     body('tableId').isNumeric().withMessage('tableid must be a number').notEmpty().withMessage('tableId is required')
 ];
 

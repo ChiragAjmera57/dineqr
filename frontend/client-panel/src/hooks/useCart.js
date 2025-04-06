@@ -1,3 +1,4 @@
+"use client"
 import { useState, useEffect, useCallback, useMemo } from "react";
 import fetchCart from "@/services/fetchCart";
 import fetchMenuList from "@/services/fetchMenuList";
@@ -8,7 +9,6 @@ import { useCartContext } from "./cartContext";
 const useCart = (tableId) => {
   const { cartData,setCartData,} = useCartContext()
   const [menuData, setMenuData] = useState(null);
-  // const [cartData, setCartData] = useState({});
   const [updatedCart, setUpdatedCart] = useState({});
   const [totalItem, setTotalItem] = useState(0);
   const [error, setError] = useState(null);
@@ -19,24 +19,32 @@ const useCart = (tableId) => {
         console.error("Table ID is missing");
         return;
       }
-
+      localStorage.setItem("tableId", tableId);
       try {
+        const localCartData = JSON.parse(localStorage.getItem("cartData") || "{}");
         const [menuRes, cartRes] = await Promise.all([
           fetchMenuList(tableId),
-          fetchCart(tableId),
+          Object.keys(localCartData).length ? null : fetchCart(tableId),
         ]);
 
         if (menuRes?.success) {
           setMenuData(menuRes.data?.menus || []);
         }
 
-        if (cartRes?.success) {
-          const cart = cartRes.data || {};
-          setCartData(cart);
-          setTotalItem(
-            Object.values(cartRes.data).reduce((sum, item) => sum + (item?.quantity || 0), 0)
-          );
+        const cartDataToSet = Object.keys(localCartData).length
+          ? localCartData
+          : cartRes?.success
+          ? cartRes.data || {}
+          : {};
+
+        if (!Object.keys(localCartData).length && cartRes?.success) {
+          localStorage.setItem("cartData", JSON.stringify(cartDataToSet));
         }
+
+        setCartData(cartDataToSet);
+        setTotalItem(
+          Object.values(cartDataToSet).reduce((sum, item) => sum + (item?.quantity || 0), 0)
+        );
 
         localStorage.setItem("tableId", tableId);
       } catch (err) {
@@ -46,7 +54,7 @@ const useCart = (tableId) => {
     };
 
     fetchData();
-  }, [tableId]);
+  }, [setCartData, tableId]);
 
   const updateCartWithLatestData = useCallback(async (currentUpdatedCart) => {
     try {
@@ -62,15 +70,16 @@ const useCart = (tableId) => {
     [updateCartWithLatestData]
   );
 
-  const increment = (itemId, quantity) => {
+  const increment = (item, quantity) => {
+    console.log("ITEM AND QUNATITY RECIEVED..",item,"QUANTITY",quantity)
     setCartData((prev) => ({
       ...prev,
-      [itemId]: {...cartData[itemId],quantity:quantity},
+      [item.id]: {...item,quantity:quantity},
     }));
     setUpdatedCart((prev) => {
       const newUpdatedCart = {
         ...prev,
-        [itemId]: {...cartData[itemId],quantity:quantity},
+        [item.id]: {...item,quantity:quantity},
       };
       updateApiDebounced(newUpdatedCart);
       return newUpdatedCart;
@@ -78,15 +87,16 @@ const useCart = (tableId) => {
     setTotalItem((prev) => prev + 1);
   };
 
-  const decrement = (itemId, quantity) => {
+  const decrement = (item, quantity) => {
+    console.log("ITEM AND QUANTITY RECIEVED AT DECREMENT...",item,"QUANTITY",quantity)
     setCartData((prev) => ({
       ...prev,
-      [itemId]: {...cartData[itemId],quantity:quantity},
+      [item.id]: {...item,quantity:quantity},
     }));
     setUpdatedCart((prev) => {
       const newUpdatedCart = {
         ...prev,
-        [itemId]: {...cartData[itemId],quantity:quantity},
+        [item.id]: {...item,quantity:quantity},
       };
       updateApiDebounced(newUpdatedCart);
       return newUpdatedCart;

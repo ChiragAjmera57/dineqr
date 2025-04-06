@@ -7,7 +7,7 @@ router.post('/place-order',  validateRequest, handleValidationErrors,(req, res) 
     placeOrder(req, res)
 })
 
-router.get('/view-order',  (req,res)=>{
+router.get('/view-order',  validateRequest, handleValidationErrors, (req,res)=>{
     getAllOrderFromSession(req,res)
 })
 module.exports = router

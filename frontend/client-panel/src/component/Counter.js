@@ -10,7 +10,7 @@ const Counter = ({ alreadyInCart, quantity, item, incrementItemCount, decrementI
 
   if (alreadyInCart && quantity > 0) {
     return (
-      <div className="border-2 border-[#26A034] rounded-md flex w-25 justify-between items-center select-none">
+      <div className="border-2 border-[#26A034] rounded-md flex w-25 justify-between items-center select-none mt-3">
         <div
           className="w-7 text-center text-[#26A034] font-bold cursor-pointer "
           onClick={decrementItem} 

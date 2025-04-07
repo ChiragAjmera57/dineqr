@@ -9,6 +9,7 @@ import BackArrow from "@/component/icons/back";
 import Cross from "@/component/icons/cross";
 import { useRouter } from "next/navigation";
 import placeOrderApi from "@/services/placeOrder";
+import OrderSuccess from "@/component/OrderSuccess";
 
 const MenuItemWithCounter = dynamic(() => import("@/component/MenuItemWithCounter"));
 
@@ -20,6 +21,7 @@ const Page = () => {
   const [tableId, setTableId] = useState(null)
   const [isUpdatingCart, setIsUpdatingCart] = useState(false);
   const router = useRouter();
+  const [showSuccessPage, setShowSuccessPage] = useState(false); 
   const [orderPlaceLoading, setOrderLoading] = useState(false)
 
 
@@ -134,6 +136,11 @@ const Page = () => {
       if(response.success){
         setOrderLoading(false)
         console.log("ORDER PLACED!!")
+        setShowSuccessPage(true);
+
+        setTimeout(() => {
+          router.push("/order-fetch"); 
+        }, 1900);
       }
     } catch (error) {
       setOrderLoading(false)
@@ -143,7 +150,9 @@ const Page = () => {
   }
   if(error) throw error
   if (isLoading) return <div>Loading...</div>;
-
+  if (showSuccessPage) {
+    return <OrderSuccess />;
+  }
   return (
     <div className="flex flex-col min-h-screen select-none">
       {/* Header */}

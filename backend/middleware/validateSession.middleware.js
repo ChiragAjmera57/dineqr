@@ -255,7 +255,7 @@ const joinExistingTable = async (req, res) => {
     if (!sessionToThisTable) {
       console.log("No one sitting on requested table adding you")
       await createSession(req, res);
-      return successResponse(res,data={redirectUrl:`http://192.168.198.161:3000/menu/${tableId}`},"created session go to /menu manually")
+      return successResponse(res,data={redirectUrl:`http://192.168.1.13:3000/menu/${tableId}`},"created session go to /menu manually")
     } else {
       console.log("Adding you to requested table with your friend...")
       const rdmCustomerId = uuidv4()
@@ -270,7 +270,7 @@ const joinExistingTable = async (req, res) => {
     // path: "/", 
     maxAge: 15 * 60 * 1000, 
       });
-      return successResponse(res,data={redirectUrl:`http://192.168.198.161:3000/menu/${tableId}`},"joined existing table ")
+      return successResponse(res,data={redirectUrl:`http://192.168.1.13:3000/menu/${tableId}`},"joined existing table ")
     }
   } catch (error) {
     return errorResponse(res, "Something went wrong", 500, {
@@ -342,7 +342,7 @@ const joinNewTable = async (req, res) => {
       // Create a new session for the new table
       req.body.tableId = newTable.id;
       await createSession(req, res);
-      return successResponse(res,data={redirectUrl:`http://192.168.198.161:3000/menu/${newTable.id}`},"joined new table")
+      return successResponse(res,data={redirectUrl:`http://192.168.1.13:3000/menu/${newTable.id}`},"joined new table")
     } catch (error) {
       return errorResponse(res, "Something went wrong", 500, {
         message: error.message,

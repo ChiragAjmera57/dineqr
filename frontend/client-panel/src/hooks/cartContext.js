@@ -9,6 +9,13 @@ export const CartProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : {};
   });
 
+  const totalPrice = useMemo(() => {
+    return Object.values(cartData).reduce((sum, item) => {
+      console.log("Item:", item);
+      return sum + (item.quantity * item.price || 0);
+    }, 0);
+  }, [cartData]);
+
   useEffect(() => {
     // Optional: Save to localStorage on changes
     localStorage.setItem('cartData', JSON.stringify(cartData));
@@ -18,7 +25,8 @@ export const CartProvider = ({ children }) => {
   const value = useMemo(() => ({
     cartData,
     setCartData,
-  }), [cartData]);
+    totalPrice
+  }), [cartData, totalPrice]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };

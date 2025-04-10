@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useState } from "react";
 
 const Page = () => {
   const [expandedCardId, setExpandedCardId] = useState(null); // State to track expanded card
-  const { orderData, setOrderData, fetchOrder } = useOrderContext();
+  const { orderData, setOrderData, fetchOrder, error, setError } = useOrderContext();
   const router = useRouter()
   const toggleExpand = (cardId) => {
     setExpandedCardId((prev) => (prev === cardId ? null : cardId)); // Toggle expansion
@@ -22,10 +22,15 @@ const Page = () => {
   const navigateToMenu = useCallback(() => {
       const tableId = localStorage.getItem("tableId")
       if(!tableId){
+        setError(Error("Table not found"))
           throw Error("Scan Qr for table again!")
       }
       router.push(`/cart`)
-    },[router])
+    },[router, setError])
+
+    if(error){
+      throw error
+    }
   return (
     <div className="flex flex-col min-h-screen select-none">
       {/* Header */}

@@ -4,7 +4,7 @@ const ErrorSvgComponent = dynamic(() => import('@/component/icons/error'));
 
 const ErrorAlert = ({
   message = "Something went wrong",
-  msgDetail = "Please try again after sometime.",
+  msgDetail = "Please try again.",
   buttons = [], 
 }) => {
   return (

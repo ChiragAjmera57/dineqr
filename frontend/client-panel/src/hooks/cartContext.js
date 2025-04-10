@@ -6,7 +6,7 @@ export const CartProvider = ({ children }) => {
   const [cartData, setCartData] = useState(() => {
     // Optional: Load initial state from localStorage if needed
     const saved = typeof window !== 'undefined' ? localStorage.getItem('cartData') : null;
-    return saved ? JSON.parse(saved) : {};
+    return saved ? JSON.parse(saved) : null;
   });
 
   const totalPrice = useMemo(() => {

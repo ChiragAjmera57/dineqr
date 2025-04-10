@@ -3,7 +3,6 @@ const ErrorAlertComponent = dynamic(() => import("@/component/alerts/error"));
 import joinExisting from "@/services/joinExisting";
 import joinNewTable from "@/services/joinNew";
 import getErrorType from "@/utils/getErrorType";
-import { joinTable } from "@/utils/joinTable";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
@@ -19,7 +18,29 @@ const Error = ({ error, reset }) => {
     console.error("Error boundary caught an error:", error);
   }, [error]);
 
-
+  const joinTable = async (option) => {
+    try {
+      if (!tableId) {
+        throw new Error("Table not found");
+      }
+      const res =
+        (await option) == "existing"
+          ? await joinExisting(tableId)
+          :await joinNewTable(tableId);
+            if (res?.data?.redirectUrl) {
+            if(option=="existing"){
+              reset()
+            }
+            console.log(res?.data?.redirectUrl);
+            router.replace(res?.data?.redirectUrl);
+            router.refresh(); // This will refresh the data without a full page reload
+            }
+        // router.push(res?.data?.redirectUrl);
+      
+    } catch (error) {
+      console.error(error)
+    }
+  };
   const errorType = useMemo(() => getErrorType(error), [error]);
 
   const renderErrorContent = () => {
@@ -29,7 +50,7 @@ const Error = ({ error, reset }) => {
         return (
           <ErrorAlertComponent
             message="Database Error"
-            msgDetail="There was an issue with the database. Please check input and try again."
+            msgDetail="There was an issue with the database. Please check input and try again later."
             buttons={[
               {
                 label: "Scan Again",

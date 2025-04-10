@@ -41,7 +41,7 @@ const Error = ({ error, reset }) => {
       console.error(error)
     }
   };
-  const errorType = useMemo(() => getErrorType(error.error), [error]);
+  const errorType = useMemo(() => getErrorType(error), [error]);
 
   const renderErrorContent = () => {
     console.log(errorType);

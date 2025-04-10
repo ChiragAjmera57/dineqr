@@ -16,6 +16,7 @@ const useCart = (tableId) => {
   useEffect(() => {
     const fetchData = async () => {
       if (!tableId) {
+        setError(Error("Table not found"))
         console.error("Table ID is missing");
         return;
       }
@@ -58,6 +59,11 @@ const useCart = (tableId) => {
 
   const updateCartWithLatestData = useCallback(async (currentUpdatedCart) => {
     try {
+      if (!tableId) {
+        setError(Error("Table not found"))
+        console.error("Table ID is missing");
+        return;
+      }
       const response = await updateCartApi({ tableId, updatedCart: currentUpdatedCart });
       console.log("RESPONSE FROM UPDATE API", response);
     } catch (error) {

@@ -33,7 +33,7 @@ const Page = () => {
     const handleFetchOnRefresh = async () => {
       const table = Number(localStorage.getItem("tableId"));
       if (!table) {
-        // setError("table not found in storage!")
+        setError(Error("Table not found"))
         throw Error("table id not found");
       }
       setTableId(table);
@@ -105,7 +105,8 @@ const Page = () => {
   const navigateToMenu = useCallback(() => {
     const tableId = localStorage.getItem("tableId")
     if(!tableId){
-        throw Error("Scan Qr for table again!")
+      setError(Error("Table not found"))
+        throw Error("Table not found")
     }
     router.push(`/menu/${tableId}`)
   },[router])

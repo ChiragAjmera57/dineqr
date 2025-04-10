@@ -1,4 +1,5 @@
 const fetchOrderApi = async (tableId) => {
+  console.log("tableid",tableId)
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
       

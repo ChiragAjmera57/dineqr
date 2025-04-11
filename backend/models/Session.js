@@ -1,15 +1,10 @@
 module.exports = (sequelize, DataTypes) => {
   const Session = sequelize.define("Session", {
     id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-      allowNull: false,
-    },
-    session_id: {
       type: DataTypes.UUID(),
       unique: true,
       required: true,
+      primaryKey: true
     },
     table_id: {
       type: DataTypes.INTEGER,
@@ -18,12 +13,9 @@ module.exports = (sequelize, DataTypes) => {
         model: "DngTables",
         key: "id",
       },
+      onDelete: 'CASCADE'
     },
-    users_involved:{
-      type: DataTypes.ARRAY(DataTypes.STRING), // Array of user IDs (strings)
-      allowNull: false,
-      defaultValue: []
-    },
+
     expires_at: { type: DataTypes.DATE, allowNull: false },
   });
   Session.associate = (models) => {
@@ -31,6 +23,10 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "table_id",
       as: "table",
       onDelete: 'SET NULL',
+    });
+    Session.hasMany(models.SessionUser, {
+      foreignKey: 'session_id',
+      as: 'sessionUsers',
     });
   };
 

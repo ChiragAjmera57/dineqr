@@ -27,8 +27,15 @@ module.exports = (sequelize, DataTypes) => {
       session_id: {
         type: DataTypes.UUID(),
         allowNull:false
+      },
+      user_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model:'Users',
+          key: 'id'
+        }
       }
-      
 });
   Order.associate = (models) => {
     Order.belongsTo(models.DngTable, {
@@ -39,6 +46,11 @@ module.exports = (sequelize, DataTypes) => {
     Order.hasMany(models.OrderItem, {
       foreignKey: 'order_id',
       as: 'orderItems',
+    });
+    Order.belongsTo(models.User, {
+      foreignKey: 'user_id',
+      as: 'user',
+      onDelete: 'SET NULL',
     });
   }
   return Order;

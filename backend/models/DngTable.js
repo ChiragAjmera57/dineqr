@@ -18,7 +18,8 @@ module.exports = (sequelize) => {
         references: {
           model:'Admins',
           key: 'id'
-        }
+        },
+        onDelete: 'CASCADE'
       },
       
     });

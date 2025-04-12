@@ -5,7 +5,8 @@ const getAllMenu = async (req, res) => {
   try {
     console.log("Reached getAllMenu function...");
 
-    const session_id = req.session?.session_id || req.cookies.session_id ; // Safely access session_id
+    const session_id = req?.session_id || req.cookies.session_id ; // Safely access session_id
+    const user_id = req.user_id
     console.log("Session ID:", session_id);
 
     if (!session_id) {
@@ -15,7 +16,7 @@ const getAllMenu = async (req, res) => {
 
     console.log("Fetching session details...");
     const session = await Session.findOne({
-      where: { session_id },
+      where: { id: session_id },
       include: [
         {
           model: DngTable,
@@ -23,7 +24,6 @@ const getAllMenu = async (req, res) => {
         },
       ],
     });
-
     if (!session || !session.table) {
       console.error("Invalid session or table not found.");
       return errorResponse(res, "Invalid session or table not found.", 404);
@@ -50,6 +50,7 @@ const getAllMenu = async (req, res) => {
       res,
       {
         menus: menus.rows,
+        user_id:user_id,
         totalItems: menus.count,
         totalPages,
         currentPage: parseInt(page),

@@ -3,8 +3,9 @@ module.exports = (sequelize, DataTypes) => {
     id: {
       type: DataTypes.UUID(),
       unique: true,
-      required: true,
-      primaryKey: true
+  required: true,
+  primaryKey: true,
+  defaultValue: DataTypes.UUIDV4,
     },
     table_id: {
       type: DataTypes.INTEGER,

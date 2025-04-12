@@ -22,7 +22,7 @@ app.get('/',(req,res)=>{
 app.use(cookieParser());
 app.use('/api/v1',v1Routes)
 
-db.sequelize.sync({alter:true}).then(() => {
+db.sequelize.authenticate().then(() => {
   redisSubscriber
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });

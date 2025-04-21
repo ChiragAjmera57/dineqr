@@ -36,7 +36,7 @@ const createSession = async (req, res, next) => {
     console.log(`Creating new session for table ${tableId}`);
 
     // Check if there is an existing valid session for the table
-    const existingSession = await Session.findOne({ where: { table_id: tableId } });
+    const existingSession = await Session.findOne({ where: { table_id: tableId, expires_at: { [Op.gt]: new Date() }} });
 
     if (existingSession) {
       console.log("existing session found for table",tableId)
@@ -47,7 +47,7 @@ const createSession = async (req, res, next) => {
       if (existingSessionUser) {
         console.log("Session already exists for this table.");
         //join same or create new
-        return successResponse(res, null, "Session already exists.");
+        return errorResponse(res,"Session already exists. Either join existing Table or join a new Table",401);
       } else {
         console.log("No users in the existing session.deleting that unused session and Recreating new session, user, sessionUser...");
         await existingSession.destroy();
@@ -71,8 +71,9 @@ const createSession = async (req, res, next) => {
     console.log("setting cookies in you frontend...",newSession.id)
     res.cookie("session_id", newSession.id, {
       httpOnly: true,
-      secure: true,
-      maxAge: 15 * 60 * 1000,
+      sameSite: 'Lax',
+          path: "/", // Make cookie available for the whole domain
+          maxAge: 15 * 60 * 1000, 
     });
     req.session_id = newSession.id
     req.user_id = newUser.id
@@ -99,7 +100,6 @@ const validateAndCreateSession = async (req, res, next) => {
     if (!tableId) return errorResponse(res, "Table ID is required", 400);
 
     let sessionId = req.cookies.session_id;
-
     if (!sessionId && user_id) {
       console.log("No session ID in cookies. Searching session by user ID...");
       const sessionUser = await SessionUser.findOne({
@@ -123,8 +123,9 @@ const validateAndCreateSession = async (req, res, next) => {
           console.log("Session found using user ID is valid.");
           res.cookie("session_id", sessionFromDb.id, {
             httpOnly: true,
-            secure: true,
-            maxAge: 15 * 60 * 1000,
+      sameSite: 'Lax',
+          path: "/", // Make cookie available for the whole domain
+          maxAge: 15 * 60 * 1000, 
           });
         }
       } else {
@@ -185,10 +186,15 @@ const validateAndCreateSession = async (req, res, next) => {
 
 const joinExistingTable = async (req, res) => {
   try {
+    console.log("Starting joinExistingTable function...");
     const { tableId, user_id } = req.body;
-    if (!tableId) return errorResponse(res, "Table ID is required", 400);
+    if (!tableId) {
+      console.log("Table ID is missing in the request.");
+      return errorResponse(res, "Table ID is required", 400);
+    }
 
     let sessionId = req.cookies.session_id;
+    console.log("Session ID from cookies:", sessionId);
 
     if (!sessionId && user_id) {
       console.log("No session ID in cookies. Searching session by user ID...");
@@ -213,8 +219,9 @@ const joinExistingTable = async (req, res) => {
           console.log("Session found using user ID is valid.");
           res.cookie("session_id", sessionFromDb.id, {
             httpOnly: true,
-            secure: true,
-            maxAge: 15 * 60 * 1000,
+            sameSite: 'Lax',
+                path: "/", // Make cookie available for the whole domain
+                maxAge: 15 * 60 * 1000,
           });
         }
       } else {
@@ -230,8 +237,13 @@ const joinExistingTable = async (req, res) => {
           expires_at: { [Op.gt]: new Date() },
         },
       });
-      if (!user_id) return errorResponse(res, "User ID is required", 400);
 
+      if (!user_id) {
+        console.log("User ID is missing in the request.");
+        return errorResponse(res, "User ID is required", 400);
+      }
+
+      console.log("Destroying SessionUser for the old session...");
       await SessionUser.destroy({
         where: { user_id, session_id: sessionId },
       });
@@ -239,35 +251,62 @@ const joinExistingTable = async (req, res) => {
       const remainingUsers = await SessionUser.findOne({
         where: { session_id: sessionId },
       });
-      if (!remainingUsers) console.log("No one left on your previous table. Clearing session...");
       if (!remainingUsers) {
+        console.log("No one left on the previous table. Clearing session...");
         await OlderSession.destroy();
       }
       console.log("Clearing session cookies from frontend...");
       res.clearCookie("session_id");
     }
+
+    console.log("Searching for session for the requested table...");
     let SessionForReqTable = await Session.findOne({
       where: {
-      table_id: tableId,
+        table_id: tableId,
       },
     });
+
+    let newUser;
     if (!SessionForReqTable) {
+      console.log("No session found for the requested table. Creating a new session...");
       SessionForReqTable = await Session.create({
-      table_id: tableId,
-      expires_at: new Date(Date.now() + 15 * 60 * 1000),
+        table_id: tableId,
+        expires_at: new Date(Date.now() + 15 * 60 * 1000),
       });
     }
+
+    console.log("Checking if user exists or creating a new user...");
+    newUser = user_id
+      ? { id: user_id }
+      : await User.create({
+          name: "dummy",
+        });
+
+    console.log("Creating SessionUser with session ID:", SessionForReqTable.id);
     const newSessionUser = await SessionUser.create({
       session_id: SessionForReqTable.id,
-      user_id: user_id,
+      user_id: newUser?.id ? newUser.id : newUser,
     });
+
+    console.log("Setting session cookie for the new session...");
     res.cookie("session_id", SessionForReqTable.id, {
       httpOnly: true,
-      secure: true,
-      maxAge: 15 * 60 * 1000,
+      sameSite: 'Lax',
+          path: "/", // Make cookie available for the whole domain
+          maxAge: 15 * 60 * 1000,
     });
-    return successResponse(res,{user_id:user_id,redirectUrl:`http://192.168.1.13:3000/menu${tableId}`},"joined existing table")
+
+    console.log("Successfully joined the existing table.");
+    return successResponse(
+      res,
+      {
+        user_id: newUser?.id ? newUser.id : newUser,
+        redirectUrl: `http://192.168.1.13:3000/menu/${tableId}`,
+      },
+      "joined existing table"
+    );
   } catch (error) {
+    console.error("Error in joinExistingTable:", error);
     return errorResponse(res, "Something went wrong", 500, {
       message: error.message,
       stack: error.stack,
@@ -277,10 +316,15 @@ const joinExistingTable = async (req, res) => {
 
 const joinNewTable = async (req, res) => {
   try {
+    console.log("Starting joinNewTable function...");
     const { tableId, user_id } = req.body;
-    if (!tableId) return errorResponse(res, "Table ID is required", 400);
+    if (!tableId) {
+      console.log("Table ID is missing in the request.");
+      return errorResponse(res, "Table ID is required", 400);
+    }
 
     let sessionId = req.cookies.session_id;
+    console.log("Session ID from cookies:", sessionId);
 
     if (!sessionId && user_id) {
       console.log("No session ID in cookies. Searching session by user ID...");
@@ -305,8 +349,9 @@ const joinNewTable = async (req, res) => {
           console.log("Session found using user ID is valid.");
           res.cookie("session_id", sessionFromDb.id, {
             httpOnly: true,
-            secure: true,
-            maxAge: 15 * 60 * 1000,
+            sameSite: 'Lax',
+                path: "/", // Make cookie available for the whole domain
+                maxAge: 15 * 60 * 1000,
           });
         }
       } else {
@@ -322,8 +367,12 @@ const joinNewTable = async (req, res) => {
           expires_at: { [Op.gt]: new Date() },
         },
       });
-      if (!user_id) return errorResponse(res, "User ID is required", 400);
+      if (!user_id) {
+        console.log("User ID is missing in the request.");
+        return errorResponse(res, "User ID is required", 400);
+      }
 
+      console.log("Destroying SessionUser for the old session...");
       await SessionUser.destroy({
         where: { user_id, session_id: sessionId },
       });
@@ -331,37 +380,46 @@ const joinNewTable = async (req, res) => {
       const remainingUsers = await SessionUser.findOne({
         where: { session_id: sessionId },
       });
-      if (!remainingUsers) console.log("No one left on your previous table. Clearing session...");
       if (!remainingUsers) {
+        console.log("No one left on the previous table. Clearing session...");
         await OlderSession.destroy();
       }
       console.log("Clearing session cookies from frontend...");
       res.clearCookie("session_id");
     }
+
+    console.log("Searching for the requested table...");
     const foundTable = await DngTable.findByPk(tableId);
     if (!foundTable) {
+      console.log("No table found with the provided table ID.");
       return errorResponse(res, "Something went wrong", 500, {
         message: "No table found!",
       });
     }
-    console.log("found table", foundTable);
+    console.log("Found table:", foundTable);
     const adminId = foundTable.admin_id;
-    // Create a new table
+
+    console.log("Creating a new table...");
     const tempTableName = uuidv4().split('-').slice(0, 5).join('-');
     const newTable = await DngTable.create({
       name: tempTableName,
       admin_id: adminId,
     });
+    console.log("New table created with ID:", newTable.id);
 
-    // Create a new session for the new table
+    console.log("Creating a new session for the new table...");
     req.body.tableId = newTable.id;
     const newUserId = await createSession(req, res);
+    console.log("New session created successfully with user ID:", newUserId);
+
+    console.log("Returning success response...");
     return successResponse(
       res,
-      (data = {user_id:newUserId, redirectUrl: `http://192.168.1.13:3000/menu/${newTable.id}` }),
-      "joined new table"
+      { user_id: newUserId, redirectUrl: `http://192.168.1.13:3000/menu/${newTable.id}` },
+      "Joined new table"
     );
   } catch (error) {
+    console.error("Error in joinNewTable:", error);
     return errorResponse(res, "Something went wrong", 500, {
       message: error.message,
       stack: error.stack,

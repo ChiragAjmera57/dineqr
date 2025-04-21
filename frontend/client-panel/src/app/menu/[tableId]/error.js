@@ -32,8 +32,7 @@ const Error = ({ error, reset }) => {
               reset()
             }
             console.log(res?.data?.redirectUrl);
-            router.replace(res?.data?.redirectUrl);
-            router.refresh(); // This will refresh the data without a full page reload
+            router.replace(res?.data?.redirectUrl); // Redirect to the new URL
             }
         // router.push(res?.data?.redirectUrl);
       

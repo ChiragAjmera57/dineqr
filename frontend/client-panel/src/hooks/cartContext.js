@@ -10,7 +10,7 @@ export const CartProvider = ({ children }) => {
   });
 
   const totalPrice = useMemo(() => {
-    return Object.values(cartData).reduce((sum, item) => {
+    return Object.values(cartData || {}).reduce((sum, item) => {
       console.log("Item:", item);
       return sum + (item.quantity * item.price || 0);
     }, 0);

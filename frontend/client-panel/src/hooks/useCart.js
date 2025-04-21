@@ -23,10 +23,8 @@ const useCart = (tableId) => {
       localStorage.setItem("tableId", tableId);
       try {
         const localCartData = JSON.parse(localStorage.getItem("cartData") || "{}");
-        const [menuRes, cartRes] = await Promise.all([
-          fetchMenuList(tableId),
-          Object.keys(localCartData).length ? null : fetchCart(tableId),
-        ]);
+        const menuRes = await fetchMenuList(tableId);
+        const cartRes = Object.keys(localCartData).length ? null : await fetchCart(tableId);
 
         if (menuRes?.success) {
           setMenuData(menuRes.data?.menus || []);

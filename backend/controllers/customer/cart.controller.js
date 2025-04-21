@@ -33,10 +33,10 @@ const updateCart = async (req, res) => {
 
 const getCart = async (req, res) => {
   try {
-    const { session_id } = req.cookies;
-    if (!session_id) return errorResponse(res, "Session not found", 401);
+    const sessionId = req.cookies.session_id;
+    if (!sessionId) return errorResponse(res, "Session not found", 401);
 
-    const cartKey = `cart:${session_id}`;
+    const cartKey = `cart:${sessionId}`;
     const cartItems = await redisClient.hgetall(cartKey);
 
     if (!cartItems || Object.keys(cartItems).length === 0) {

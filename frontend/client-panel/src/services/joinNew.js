@@ -9,11 +9,12 @@ const joinNewTable = async (tableId) => {
       if (!tableId) {
         throw new Error("Table ID is required");
       }
-      localStorage.clear()
+      
+      const userId = localStorage.getItem("userId")
       const response = await fetch(`${backendUrl}/ctmr/joining/create-new-table`, {
         credentials: 'include',
         method: 'POST',
-        body: JSON.stringify({ tableId }),
+        body: JSON.stringify({ tableId,userId }),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -25,8 +26,14 @@ const joinNewTable = async (tableId) => {
       console.log("JSON Response:", jsonResponse);
       
       if (!response.ok || !jsonResponse?.success) {
+        
         throw { status: response.status, statusText: response.statusText, error: jsonResponse };
       }
+      // localStorage.clear()
+        const newUserId = jsonResponse?.data?.user_id
+        if(newUserId){
+          localStorage.setItem("userId",newUserId)
+        }
       return jsonResponse;
     } catch (err) {
         throw { 

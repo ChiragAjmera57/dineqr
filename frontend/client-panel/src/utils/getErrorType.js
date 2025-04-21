@@ -8,7 +8,7 @@ const getErrorType = (error) => {
       return 'sequelize';
     case 'Session not found. Please scan the QR code again.':
       return 'sessionExpired';
-    case 'Table already occupied. Ask to join the same or create a new table.':
+    case 'Session already exists. Either join existing Table or join a new Table':
       return 'tableOccupied';
     case 'Table not found':
       return 'sessionExpired';

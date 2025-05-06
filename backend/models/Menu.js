@@ -27,7 +27,8 @@ module.exports = (sequelize, DataTypes) => {
         references: {
           model:'Admins',
           key: 'id'
-        }
+        },
+        onDelete: 'CASCADE'
     }
 });
   Menu.associate = (models) => {

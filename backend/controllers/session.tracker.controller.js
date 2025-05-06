@@ -1,5 +1,5 @@
-const { Session, DngTable } = require("../models");
-const { Op, Sequelize } = require("sequelize");
+const { Session, DngTable, SessionUser } = require("../models");
+const { Op, Sequelize, where } = require("sequelize");
 const { errorResponse, successResponse } = require("../utils/responseGenerator");
 
 const getTableStatus = async (req, res) => {
@@ -9,19 +9,22 @@ const getTableStatus = async (req, res) => {
     // Get all sessions that are not expired and belong to tables associated with the admin_id
     const activeSessions = await Session.findAll({
       where: {
-        expires_at: {
-          [Op.gt]: new Date(),
-        },
-        users_involved: { [Sequelize.Op.ne]: [] } 
+      expires_at: {
+        [Op.gt]: new Date(),
+      },
       },
       include: [
-        {
-          model: DngTable,
-          as: 'table',
-          where: {
-            admin_id: admin_id,
-          },
+      {
+        model: DngTable,
+        as: 'table',
+        where: {
+        admin_id: admin_id,
         },
+      },
+      {
+        model: SessionUser,
+        as: 'sessionUsers', 
+      },
       ],
     });
 
@@ -32,15 +35,13 @@ const getTableStatus = async (req, res) => {
       },
     });
 
-    // Get all table IDs that have active sessions
     const activeTableIds = activeSessions.map(session => session.table_id);
 
-    // Get all tables that are vacant (i.e., do not have an active session)
     const vacantTables = allTables.filter(table => !activeTableIds.includes(table.id));
 
     return successResponse(res, {
       activeSessions,
-      vacantTables,
+      vacantTables
     }, "Table status fetched successfully");
   } catch (error) {
     return errorResponse(res, "Something went wrong", 500, {
@@ -56,8 +57,12 @@ const expireSession = async (req, res) => {
       if (!sessionId) {
         return errorResponse(res, "Session ID is required", 400);
       }
-  
-      const session = await Session.findOne({ where: { session_id: sessionId } });
+      await SessionUser.destroy({
+        where: {
+          session_id: sessionId
+        }
+      });
+      const session = await Session.findByPk(sessionId);
       if (!session) {
         return errorResponse(res, "Session not found", 404);
       }

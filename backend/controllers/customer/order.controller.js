@@ -1,20 +1,33 @@
-const { Order, Menu, OrderItem, sequelize,Session } = require("../../models");
+const { Order, Menu, OrderItem, sequelize,Session, User } = require("../../models");
 const { setOrderExpiration } = require("../../services/redisPublisher");
 const { successResponse, errorResponse } = require("../../utils/responseGenerator");
+const { redisClient } = require("../../config/redisConfig");
+
 
 const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
-    const { tableId, data } = req.body;
-
+    const { tableId, userId } = req.body;
+    
     const sessionId = req.cookies.session_id || req.session_id;  
     console.log('Session ID:', sessionId);
 
-    const session = await Session.findOne({ where: { session_id: sessionId } });
+    if(!sessionId){
+      return errorResponse(res,"Session not found!",400)
+    }
+    const userFromDb = await User.findByPk(userId)
+    if(!userFromDb) return errorResponse(res,"User not found!",404)
+    if(!userFromDb.phone_verified) return errorResponse(res,"Validated Phone Number require for placing order",401)
+    const session = await Session.findByPk(sessionId);
     if (!session || session.table_id !== tableId) {
       return errorResponse(res, "Invalid session or table ID", 401);
     }
-
+    const cartKey = `cart:${sessionId}`;
+    const cart = await redisClient.hgetall(cartKey);
+    if (!cart || Object.keys(cart).length === 0) {
+      return errorResponse(res, "Cart is empty", 400);
+    }
+    console.log("cart",cart)
     const newOrder = await Order.create({
       status: "pending",
       table_id: tableId,
@@ -25,30 +38,31 @@ const placeOrder = async (req, res) => {
     let totalAmount = 0;
     const orderItems = [];
 
-    for (let i of data) {
-      const { menuId, quantity } = i;
-
+    for (const [menuId, value] of Object.entries(cart)) {
+      const quantity = parseInt(value); // Ensure quantity is parsed as an integer
+    
       if (!menuId || !quantity || quantity <= 0) {
         await transaction.rollback();
-        return errorResponse(res, "Invalid menu item data", 400);
+        return errorResponse(res, "Invalid menu item data in cart", 400);
       }
-
-      const menu = await Menu.findByPk(menuId);
+    
+      const menu = await Menu.findByPk(Number(menuId));
       if (!menu) {
         await transaction.rollback();
         return errorResponse(res, `Menu item with ID ${menuId} not found`, 404);
       }
-
+    
       const priceOfItem = menu.price;
-      totalAmount += (quantity * priceOfItem);
-
+      totalAmount += quantity * priceOfItem;
+    
       orderItems.push({
         menu_id: menuId,
         order_id: newOrder.id,
         quantity,
-        price: quantity * priceOfItem
+        price: quantity * priceOfItem,
       });
-    }
+    } 
+    
 
     await OrderItem.bulkCreate(orderItems, { transaction });
 
@@ -56,7 +70,11 @@ const placeOrder = async (req, res) => {
     await newOrder.save({ transaction });
 
     await transaction.commit();
-    await setOrderExpiration(newOrder.id)
+    await setOrderExpiration(newOrder.id);
+    if(transaction.finished === 'commit'){
+      await redisClient.del(cartKey);
+    }
+
     return successResponse(res, { orderId: newOrder.id }, "Order placed", 201);
   } catch (error) {
     await transaction.rollback();

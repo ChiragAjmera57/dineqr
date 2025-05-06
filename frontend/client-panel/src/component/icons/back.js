@@ -1,0 +1,8 @@
+
+const BackArrow = ({width=24,height=24,className="",color="currentColor"}) => {
+  return (
+    <svg data-name="Layer 1" width={width} height={height} className={className} fill="white" color={color} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M11.62 3.81 7.43 8l4.19 4.19-1.53 1.52L4.38 8l5.71-5.71 1.53 1.52z"/></svg>
+  )
+}
+
+export default BackArrow

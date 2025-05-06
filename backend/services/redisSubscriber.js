@@ -1,6 +1,5 @@
-const Redis = require("ioredis");
-const redisSubscriber = new Redis({ host: "localhost", port: 6379 });
-const {Order}  = require('../models') 
+const { Order } = require('../models');
+const { redisSubscriber } = require('../config/redisConfig'); // Use separate subscriber instance
 
 // Enable Redis Keyspace Notifications
 redisSubscriber.config("SET", "notify-keyspace-events", "Ex");

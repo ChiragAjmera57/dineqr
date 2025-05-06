@@ -57,8 +57,12 @@ const expireSession = async (req, res) => {
       if (!sessionId) {
         return errorResponse(res, "Session ID is required", 400);
       }
-  
-      const session = await Session.findOne({ where: { session_id: sessionId } });
+      await SessionUser.destroy({
+        where: {
+          session_id: sessionId
+        }
+      });
+      const session = await Session.findByPk(sessionId);
       if (!session) {
         return errorResponse(res, "Session not found", 404);
       }

@@ -1,4 +1,4 @@
-const { Order, Menu, OrderItem, sequelize,Session } = require("../../models");
+const { Order, Menu, OrderItem, sequelize,Session, User } = require("../../models");
 const { setOrderExpiration } = require("../../services/redisPublisher");
 const { successResponse, errorResponse } = require("../../utils/responseGenerator");
 const { redisClient } = require("../../config/redisConfig");
@@ -7,7 +7,7 @@ const { redisClient } = require("../../config/redisConfig");
 const placeOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
-    const { tableId } = req.body;
+    const { tableId, userId } = req.body;
     
     const sessionId = req.cookies.session_id || req.session_id;  
     console.log('Session ID:', sessionId);
@@ -15,7 +15,10 @@ const placeOrder = async (req, res) => {
     if(!sessionId){
       return errorResponse(res,"Session not found!",400)
     }
-    const session = await Session.findOne({ where: { session_id: sessionId } });
+    const userFromDb = await User.findByPk(userId)
+    if(!userFromDb) return errorResponse(res,"User not found!",404)
+    if(!userFromDb.phone_verified) return errorResponse(res,"Validated Phone Number require for placing order",401)
+    const session = await Session.findByPk(sessionId);
     if (!session || session.table_id !== tableId) {
       return errorResponse(res, "Invalid session or table ID", 401);
     }

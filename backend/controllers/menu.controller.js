@@ -45,7 +45,6 @@ const getAllMenu = async (req, res) => {
 
     const totalPages = Math.ceil(menus.count / limit);
     console.log("Menus fetched successfully:");
-
     return successResponse(
       res,
       {

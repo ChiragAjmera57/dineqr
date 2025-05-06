@@ -1,4 +1,4 @@
-const placeOrderApi = async ({tableId}) => {
+const placeOrderApi = async ({tableId, userId}) => {
     console.log("=====called place ordqer api======")
     console.log("tableid",tableId)
       try {
@@ -15,7 +15,7 @@ const placeOrderApi = async ({tableId}) => {
         const response = await fetch(`${backendUrl}/ctmr/order/place-order`, {
           credentials: 'include',
           method: 'POST',
-          body: JSON.stringify({ tableId }),
+          body: JSON.stringify({ tableId, userId }),
           headers: {
             'Content-Type': 'application/json',
           },

@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require("uuid");
+
 const { Session, DngTable, SessionUser, User } = require("../models");
 const {
   errorResponse,
@@ -79,7 +80,7 @@ const createSession = async (req, res, next) => {
     req.user_id = newUser.id
     if (next) {
       console.log("next");
-      return next();
+       next();
       } else {
       console.log("returning from createSession function");
       return newUser.id;
@@ -123,9 +124,9 @@ const validateAndCreateSession = async (req, res, next) => {
           console.log("Session found using user ID is valid.");
           res.cookie("session_id", sessionFromDb.id, {
             httpOnly: true,
-      sameSite: 'Lax',
-          path: "/", // Make cookie available for the whole domain
-          maxAge: 15 * 60 * 1000, 
+            sameSite: 'Lax',
+            path: "/", // Make cookie available for the whole domain
+            maxAge: 15 * 60 * 1000,
           });
         }
       } else {
@@ -146,7 +147,10 @@ const validateAndCreateSession = async (req, res, next) => {
         console.log("Session from cookies or user ID is valid.");
         if (tableId === sessionFromDb.table_id) {
           console.log("User is already in the session for this table. Returning menu.");
-          return next();
+          console.log("=====validation ends (next called)======");
+          req.session_id = sessionId
+          next();
+          return;
         } else {
           console.log("User is switching tables. Cleaning up previous session...");
           if (!user_id) return errorResponse(res, "User ID is required", 400);
@@ -174,9 +178,12 @@ const validateAndCreateSession = async (req, res, next) => {
     }
 
     console.log("Creating a new session...");
-    await createSession(req, res, next);
+    const result = await createSession(req, res, next);
+    console.log("=====validation ends (response sent)======");
+    return result;
   } catch (error) {
     console.error("Error in validateAndCreateSession:", error);
+    console.log("=====validation ends (error occurred)======");
     return errorResponse(res, "Something went wrong", 500, {
       message: error.message,
       stack: error.stack,
@@ -240,7 +247,7 @@ const joinExistingTable = async (req, res) => {
 
       if (!user_id) {
         console.log("User ID is missing in the request.");
-        return errorResponse(res, "User ID is required", 400);
+        return errorResponse(res, "User ID is required clear site data and retry", 400);
       }
 
       console.log("Destroying SessionUser for the old session...");
@@ -262,11 +269,12 @@ const joinExistingTable = async (req, res) => {
     console.log("Searching for session for the requested table...");
     let SessionForReqTable = await Session.findOne({
       where: {
-        table_id: tableId,
+      table_id: tableId,
+      expires_at: { [Op.gt]: new Date() }, 
       },
+      order: [['expires_at', 'DESC']],
     });
 
-    let newUser;
     if (!SessionForReqTable) {
       console.log("No session found for the requested table. Creating a new session...");
       SessionForReqTable = await Session.create({
@@ -276,16 +284,27 @@ const joinExistingTable = async (req, res) => {
     }
 
     console.log("Checking if user exists or creating a new user...");
-    newUser = user_id
-      ? { id: user_id }
-      : await User.create({
-          name: "dummy",
-        });
+    let newUserId;
+    if (user_id) {
+      console.log("Validating provided user ID...");
+      const existingUser = await User.findByPk(user_id);
+      if (!existingUser) {
+      console.log("Provided user ID is invalid. Creating a new user...");
+      newUserId = (await User.create({ name: "dummy" })).id;
+      } else {
+      console.log("Provided user ID is valid.");
+      newUserId = user_id;
+      }
+    } else {
+      console.log("No user ID provided. Creating a new user...");
+      newUserId = (await User.create({ name: "dummy" })).id;
+    }
 
+    console.log("New user ID:", newUserId);
     console.log("Creating SessionUser with session ID:", SessionForReqTable.id);
     const newSessionUser = await SessionUser.create({
       session_id: SessionForReqTable.id,
-      user_id: newUser?.id ? newUser.id : newUser,
+      user_id: newUserId,
     });
 
     console.log("Setting session cookie for the new session...");
@@ -300,7 +319,7 @@ const joinExistingTable = async (req, res) => {
     return successResponse(
       res,
       {
-        user_id: newUser?.id ? newUser.id : newUser,
+        user_id: newUserId,
         redirectUrl: `http://192.168.1.13:3000/menu/${tableId}`,
       },
       "joined existing table"

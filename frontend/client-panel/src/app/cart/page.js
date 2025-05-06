@@ -112,7 +112,7 @@ const Page = () => {
   },[router])
 
   const updateApiDebounced = useMemo(
-    () => debounce(updateCartWithLatestData, 2000),
+    () => debounce(updateCartWithLatestData, 1000),
     [updateCartWithLatestData]
   );
 
@@ -156,7 +156,8 @@ const Page = () => {
   const placeOrder = async () => {
     try {
       setOrderLoading(true);
-      const response = await placeOrderApi({ tableId });
+      const userId = localStorage.getItem("userId")
+      const response = await placeOrderApi({ tableId, userId });
       if (response.success) {
         setOrderLoading(false);
         console.log("ORDER PLACED!!");

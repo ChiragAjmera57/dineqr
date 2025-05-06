@@ -12,6 +12,7 @@ const customerMenuRoutes = require('./cutomerRoutes/menu.routes');
 const customerOrderroutes = require('./cutomerRoutes/order.routes');
 const customerCartRoutes = require('./cutomerRoutes/cart.routes');
 const customerJoiningRoute = require('./cutomerRoutes/joinTable.route');
+const customerAddPhoneRoute = require('./cutomerRoutes/phNumber.routes')
 const { validateAndCreateSession} = require('../middleware/validateSession.middleware');
 
 router.use('/admin', AdminAuth);
@@ -24,5 +25,7 @@ router.use('/ctmr/joining', customerJoiningRoute);
 router.use('/ctmr/menu', validateAndCreateSession, customerMenuRoutes);
 router.use('/ctmr/cart', validateAndCreateSession, customerCartRoutes);
 router.use('/ctmr/order',validateAndCreateSession, customerOrderroutes);
+router.use('/ctmr/add-phone', customerAddPhoneRoute);
+
 
 module.exports = router;

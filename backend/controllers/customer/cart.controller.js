@@ -33,7 +33,8 @@ const updateCart = async (req, res) => {
 
 const getCart = async (req, res) => {
   try {
-    const sessionId = req.cookies.session_id;
+    const sessionId = req.cookies.session_id || req.session_id;
+    // console.log("request object at getCArt",req)
     if (!sessionId) return errorResponse(res, "Session not found", 401);
 
     const cartKey = `cart:${sessionId}`;

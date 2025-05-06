@@ -1,15 +1,24 @@
 module.exports = (sequelize, DataTypes) => {
     const User = sequelize.define("User", {
       id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true,
-        allowNull: false,
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
       },
       name: {
-        type: DataTypes.STRING,
-        allowNull: true,
+      type: DataTypes.STRING,
+      allowNull: true,
       },
+      phNumber: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      },
+      phone_verified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue:false
+      }
     });
     User.associate = (models) => {
       User.hasMany(models.Order, {

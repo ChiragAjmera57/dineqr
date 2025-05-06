@@ -20,38 +20,34 @@ const useCart = (tableId) => {
         console.error("Table ID is missing");
         return;
       }
-      localStorage.setItem("tableId", tableId);
+      
       try {
-        const localCartData = JSON.parse(localStorage.getItem("cartData") || "{}");
+        localStorage.setItem("tableId", tableId);
         const menuRes = await fetchMenuList(tableId);
-        const cartRes = Object.keys(localCartData).length ? null : await fetchCart(tableId);
 
         if (menuRes?.success) {
           setMenuData(menuRes.data?.menus || []);
         }
 
-        const cartDataToSet = Object.keys(localCartData).length
-          ? localCartData
-          : cartRes?.success
+        const cartRes = await fetchCart(tableId);
+
+        const cartDataToSet = cartRes?.success
           ? cartRes.data || {}
           : {};
 
-        if (!Object.keys(localCartData).length && cartRes?.success) {
-          localStorage.setItem("cartData", JSON.stringify(cartDataToSet));
-        }
+        localStorage.setItem("cartData", JSON.stringify(cartDataToSet));
 
         setCartData(cartDataToSet);
         setTotalItem(
           Object.values(cartDataToSet).reduce((sum, item) => sum + (item?.quantity || 0), 0)
         );
 
-        localStorage.setItem("tableId", tableId);
       } catch (err) {
         setError(err);
         console.error("Error fetching data:", err);
       }
     };
-
+    
     fetchData();
   }, [setCartData, tableId]);
 
@@ -70,7 +66,7 @@ const useCart = (tableId) => {
   }, [tableId]);
 
   const updateApiDebounced = useMemo(
-    () => debounce(updateCartWithLatestData, 2000),
+    () => debounce(updateCartWithLatestData, 1000),
     [updateCartWithLatestData]
   );
 
